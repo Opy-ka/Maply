@@ -121,6 +121,17 @@ def get_assessment(assessment_id: str):
         raise HTTPException(status_code=404, detail="Assessment tidak ditemukan")
     return DB_ASSESSMENTS[assessment_id]
 
+@router.put("/assessments/{assessment_id}", response_model=AssessmentConfig)
+def update_assessment(assessment_id: str, config: AssessmentConfig):
+    if assessment_id not in DB_ASSESSMENTS:
+        raise HTTPException(status_code=404, detail="Assessment tidak ditemukan")
+    if config.id != assessment_id:
+        raise HTTPException(status_code=400, detail="ID assessment tidak cocok")
+    if config.master_map_id not in DB_MASTER_MAPS:
+        raise HTTPException(status_code=404, detail="Master Map tidak ditemukan")
+    DB_ASSESSMENTS[assessment_id] = config
+    return config
+
 @router.get("/assessments/{assessment_id}/kit", response_model=ConceptKit)
 def get_assessment_kit(assessment_id: str):
     if assessment_id not in DB_ASSESSMENTS:
@@ -139,7 +150,22 @@ def get_master_map(map_id: str):
 
 @router.post("/maps/master", response_model=MasterConceptMap)
 def save_master_map(master_map: MasterConceptMap):
+    node_ids = {n.id for n in master_map.nodes}
+    if not node_ids:
+        raise HTTPException(status_code=422, detail="Master Map harus memiliki minimal satu konsep")
+    for e in master_map.edges:
+        if e.source not in node_ids or e.target not in node_ids:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Relasi '{e.id}' merujuk node yang tidak ada ({e.source} -> {e.target})"
+            )
+
     DB_MASTER_MAPS[master_map.id] = master_map
+
+    # Results graded against the previous version of this map are no longer valid
+    for asm_id, asm in DB_ASSESSMENTS.items():
+        if asm.master_map_id == master_map.id:
+            DB_SUBMISSIONS[asm_id] = []
     return master_map
 
 @router.post("/assessments/{assessment_id}/submit", response_model=EvaluationResult)
@@ -152,7 +178,7 @@ def submit_student_map(assessment_id: str, submission: StudentSubmission):
         raise HTTPException(status_code=404, detail="Master Map tidak ditemukan")
 
     result = GraphAssessmentEngine.evaluate_submission(master_map, submission, asm)
-    DB_SUBMISSIONS[assessment_id].append(result)
+    DB_SUBMISSIONS.setdefault(assessment_id, []).append(result)
     return result
 
 @router.get("/assessments/{assessment_id}/analytics", response_model=ClassKnowledgeGapSummary)

@@ -50,9 +50,58 @@ export const INITIAL_ASSESSMENT: AssessmentConfig = {
   }
 };
 
+export async function checkBackendHealth(): Promise<boolean> {
+  try {
+    const root = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+    const res = await fetch(`${root}/health`, { cache: 'no-store' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function readError(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    return typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+  } catch {
+    return `HTTP ${res.status}`;
+  }
+}
+
+export async function saveMasterMap(map: MasterConceptMap): Promise<MasterConceptMap> {
+  const res = await fetch(`${API_BASE_URL}/maps/master`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(map)
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function fetchAssessment(asmId: string = 'asm-1'): Promise<AssessmentConfig> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('Backend unavailable, using initial assessment config:', err);
+  }
+  return INITIAL_ASSESSMENT;
+}
+
+export async function updateAssessment(config: AssessmentConfig): Promise<AssessmentConfig> {
+  const res = await fetch(`${API_BASE_URL}/assessments/${config.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
 export async function fetchMasterMap(mapId: string = 'map-cpu-1'): Promise<MasterConceptMap> {
   try {
-    const res = await fetch(`${API_BASE_URL}/maps/master/${mapId}`);
+    const res = await fetch(`${API_BASE_URL}/maps/master/${mapId}`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, using initial data:', err);
@@ -62,7 +111,7 @@ export async function fetchMasterMap(mapId: string = 'map-cpu-1'): Promise<Maste
 
 export async function fetchAssessmentKit(asmId: string = 'asm-1'): Promise<ConceptKit> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/kit`);
+    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/kit`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, generating client fallback kit:', err);
@@ -184,7 +233,7 @@ export async function submitStudentMap(
 
 export async function fetchClassAnalytics(asmId: string = 'asm-1'): Promise<ClassKnowledgeGapSummary> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/analytics`);
+    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/analytics`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, using initial analytics data:', err);

@@ -266,6 +266,9 @@ class GraphAssessmentEngine:
         for r in results:
             for item in r.evaluated_edges:
                 key = f"{item.source_label} -> {item.target_label} [{item.label}]"
+                rev_key = f"{item.target_label} -> {item.source_label} [{item.label}]"
+                if key not in edge_stats and item.status == "correct" and rev_key in edge_stats:
+                    key = rev_key  # accepted via direction tolerance
                 if key in edge_stats:
                     if item.status == "correct":
                         edge_stats[key]["correct_count"] += 1
