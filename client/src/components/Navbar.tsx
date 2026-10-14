@@ -87,9 +87,39 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
     updateIndicatorForTab(currentTab);
   };
 
+  const roleNavRef = useRef<HTMLDivElement>(null);
+  const roleRefs = useRef<{ teacher: HTMLButtonElement | null; student: HTMLButtonElement | null }>({
+    teacher: null,
+    student: null,
+  });
+  const [rolePillStyle, setRolePillStyle] = useState({ left: 4, width: 68, opacity: 1 });
+
   // Role toggle state: Dosen is active on teacher & analytics, Mahasiswa is active on student
   const isDosenActive = currentTab === 'teacher' || currentTab === 'analytics';
   const isMahasiswaActive = currentTab === 'student';
+
+  const activeRoleKey: 'teacher' | 'student' = isMahasiswaActive ? 'student' : 'teacher';
+
+  const updateRoleIndicator = useCallback(() => {
+    const container = roleNavRef.current;
+    const target = roleRefs.current[activeRoleKey];
+    if (container && target) {
+      const cRect = container.getBoundingClientRect();
+      const tRect = target.getBoundingClientRect();
+      setRolePillStyle({
+        left: tRect.left - cRect.left,
+        width: tRect.width,
+        opacity: 1,
+      });
+    }
+  }, [activeRoleKey]);
+
+  useEffect(() => {
+    updateRoleIndicator();
+    const handleResize = () => updateRoleIndicator();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateRoleIndicator]);
 
   const isHomeSection = currentTab === 'onboarding';
   const showBorder = !isHomeSection || isScrolled;
@@ -118,11 +148,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
           </button>
         </div>
 
-        {/* Navigation Tabs Bar with Gliding Blue Indicator Pill */}
+        {/* Navigation Tabs Bar (Outer pill container with seamless borderless blue sliding fill) */}
         <nav
           ref={navRef}
           onMouseLeave={handleNavLeave}
-          className="relative flex items-center bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          className="relative flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none max-w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           {/* Seamless Blue Sliding Fill (No inner border, fills completely without gaps) */}
           <div
@@ -146,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
                 }}
                 onClick={() => onTabChange(item.id)}
                 onMouseEnter={() => handleTabHover(item.id)}
-                className={`relative z-10 py-2 text-xs whitespace-nowrap cursor-pointer transition-colors duration-200 ${
+                className={`relative z-10 h-full flex items-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-200 ${
                   isFirst ? 'pl-5 pr-4' : isLast ? 'pl-4 pr-5' : 'px-4'
                 } ${
                   isHighlighted ? 'text-white font-black' : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
@@ -162,7 +192,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* Peach Live Room Badge */}
           <div
-            className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFE3C8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] select-none cursor-default"
+            className="h-[38px] flex items-center gap-2.5 px-3.5 rounded-full bg-[#FFE3C8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] select-none cursor-default"
             title={backendOnline ? 'FILKOM UB Live Room — Backend Online (port 8000)' : 'FILKOM UB Live Room — Offline Demo Mode'}
           >
             <span
@@ -171,35 +201,54 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
               }`}
             />
             <div className="flex flex-col text-left leading-[1.05]">
-              <span className="text-[9px] font-black uppercase tracking-wider text-[#1B1B1E] font-serif">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#1B1B1E] font-serif">
                 FILKOM UB • LIVE
               </span>
-              <span className="text-[9px] font-black uppercase tracking-wider text-[#1B1B1E] font-serif">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#1B1B1E] font-serif">
                 ROOM
               </span>
             </div>
           </div>
 
-          {/* Dosen / Mahasiswa Role Toggle */}
-          <div className="flex items-center gap-0.5 p-0.5 rounded-full bg-[#EDE8F5] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
+          {/* Dosen / Mahasiswa Role Toggle (Matched to reference image with sliding white capsule pill & 2px black border) */}
+          <div
+            ref={roleNavRef}
+            className="relative h-[38px] flex items-center p-1 rounded-full bg-[#EDE8F5] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0px_#1B1B1E] select-none"
+          >
+            {/* Sliding White Capsule Pill with 2px Black Border */}
+            <div
+              className="absolute top-1 bottom-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-none z-0"
+              style={{
+                transform: `translateX(${rolePillStyle.left - 4}px)`,
+                width: `${rolePillStyle.width}px`,
+                opacity: rolePillStyle.opacity,
+              }}
+            />
+
             <button
               type="button"
+              ref={(el) => {
+                roleRefs.current.teacher = el;
+              }}
               onClick={() => onTabChange('teacher')}
-              className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs font-serif font-bold transition-all duration-200 cursor-pointer ${
+              className={`relative z-10 px-3.5 sm:px-4 py-1 text-xs sm:text-sm font-serif font-black transition-colors duration-200 cursor-pointer flex items-center justify-center ${
                 isDosenActive
-                  ? 'bg-white text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]'
-                  : 'text-[#5A5862] hover:text-[#1B1B1E] border-2 border-transparent'
+                  ? 'text-[#1B1B1E]'
+                  : 'text-[#504E5C] hover:text-[#1B1B1E]'
               }`}
             >
               Dosen
             </button>
             <button
               type="button"
+              ref={(el) => {
+                roleRefs.current.student = el;
+              }}
               onClick={() => onTabChange('student')}
-              className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs font-serif font-bold transition-all duration-200 cursor-pointer ${
+              className={`relative z-10 px-3.5 sm:px-4 py-1 text-xs sm:text-sm font-serif font-black transition-colors duration-200 cursor-pointer flex items-center justify-center ${
                 isMahasiswaActive
-                  ? 'bg-white text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]'
-                  : 'text-[#5A5862] hover:text-[#1B1B1E] border-2 border-transparent'
+                  ? 'text-[#1B1B1E]'
+                  : 'text-[#504E5C] hover:text-[#1B1B1E]'
               }`}
             >
               Mahasiswa
@@ -211,7 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange, backend
             <button
               type="button"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#0047FF] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-center text-white cursor-pointer hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#1B1B1E] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all"
+              className="w-[38px] h-[38px] rounded-full bg-[#0047FF] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-center text-white cursor-pointer hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#1B1B1E] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all"
               title="Akun Pengguna FILKOM UB"
             >
               <User className="w-4 h-4 stroke-[2.5]" />

@@ -24,8 +24,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onNavigate }) =>
   return (
     <div className="bg-[#FAF7F2] text-[#1B1B1E] min-h-screen">
       {/* Hero Section */}
-      <section className="relative px-4 sm:px-6 lg:px-8 pt-12 pb-20 overflow-hidden border-b-2 border-[#1B1B1E]">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <section className="relative px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-16 overflow-hidden border-b-2 border-[#1B1B1E]">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Eyebrow Tag */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFEAA7] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-[10px] font-extrabold uppercase tracking-widest text-[#1B1B1E]">
             <span>●</span>
