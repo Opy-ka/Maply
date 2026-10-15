@@ -26,8 +26,10 @@ import {
   Edit3,
   Plus,
   AlertTriangle,
-  Save
+  Save,
+  Sliders
 } from 'lucide-react';
+import { CreateAssessmentWizard } from './CreateAssessmentWizard';
 
 interface TeacherViewProps {
   masterMap: MasterConceptMap;
@@ -105,6 +107,9 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiDraft, setAiDraft] = useState<AIDraftResponse | null>(null);
+
+  // Assessment wizard
+  const [showWizard, setShowWizard] = useState(false);
 
   // Assessment config
   const [allowTolerance, setAllowTolerance] = useState(assessmentConfig.allow_bidirectional_tolerance);
@@ -269,6 +274,14 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#065F46] text-xs font-black border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] hover:shadow-[4px_4px_0px_#1B1B1E] transition-all"
+          >
+            <Sliders className="w-3.5 h-3.5 text-[#059669]" />
+            <span>Wizard Asesmen 4-Step</span>
+          </button>
+
           <button
             onClick={() => setShowAiModal(true)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white text-xs font-black border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] hover:shadow-[4px_4px_0px_#1B1B1E] transition-all"
@@ -560,6 +573,15 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Assessment 4-Step Wizard Modal */}
+      {showWizard && (
+        <CreateAssessmentWizard
+          masterMap={buildMapFromCanvas()}
+          onSaveAssessment={onSaveAssessment}
+          onClose={() => setShowWizard(false)}
+        />
       )}
     </div>
   );

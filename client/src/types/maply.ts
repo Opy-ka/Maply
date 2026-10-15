@@ -29,15 +29,23 @@ export interface AssessmentConfig {
   id: string;
   title: string;
   description?: string;
+  instructions?: string;
   master_map_id: string;
   duration_minutes: number;
+  time_limit_minutes?: number;
   allow_bidirectional_tolerance: boolean;
+  allow_bidirectional_fallback?: boolean;
   tolerated_symmetric_labels: string[];
   randomize_kit: boolean;
   weights: {
     concept_recognition: number;
     relationship_accuracy: number;
     structural_understanding: number;
+  };
+  scoring_weights?: {
+    concept_presence: number;
+    proposition_accuracy: number;
+    topology: number;
   };
 }
 
