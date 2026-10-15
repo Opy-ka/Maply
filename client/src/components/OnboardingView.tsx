@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ActiveTab } from './Navbar';
+import Interactive3DGraph from './Interactive3DGraph';
 import {
   GraduationCap,
   Sparkles,
@@ -39,7 +40,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
   return (
     <div className="bg-[#FAF7F2] text-[#1B1B1E] min-h-screen">
       {/* Hero Section (Pixel-matched to Figma #52:7232 and User Reference) */}
-      <section className="relative px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 pb-12 overflow-hidden">
+      <section className="relative px-4 sm:px-6 lg:px-8 pt-1 sm:pt-2 pb-2 sm:pb-3 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* ================= LEFT COLUMN: TYPOGRAPHY & INTENT (7 cols) ================= */}
@@ -73,14 +74,16 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
             {/* CTAs Row 1: Masuk Sebagai Mahasiswa & Masuk Portal Dosen (Elongated Pill, Exactly Equal Size, No Wrap) */}
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
-                onClick={() => onNavigate('student')}
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onNavigate('student'))}
                 className="flex items-center justify-center w-full sm:w-[310px] h-[52px] px-6 rounded-full bg-[#0038D1] hover:bg-[#1A4BDB] text-white font-serif font-bold text-base sm:text-[17px] border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all cursor-pointer text-center whitespace-nowrap"
               >
                 <span>Masuk Sebagai Mahasiswa</span>
               </button>
 
               <button
-                onClick={() => onNavigate('teacher')}
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onNavigate('teacher'))}
                 className="flex items-center justify-center w-full sm:w-[310px] h-[52px] px-6 rounded-full bg-white hover:bg-[#F4F4F6] text-[#1B1B1E] font-serif font-bold text-base sm:text-[17px] border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all cursor-pointer text-center whitespace-nowrap"
               >
                 <span>Masuk Portal Dosen</span>
@@ -88,122 +91,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
             </div>
           </div>
 
-          {/* ================= RIGHT COLUMN: TACTILE ROUNDTABLE CARD (5 cols) ================= */}
+          {/* ================= RIGHT COLUMN: INTERACTIVE 3D KNOWLEDGE GRAPH (5 cols) ================= */}
           <div className="lg:col-span-5">
-            <div className="p-5 sm:p-6 rounded-3xl bg-white border-2 border-[#1B1B1E] shadow-[6px_6px_0px_#1B1B1E] space-y-4">
-
-              {/* Card Header Ribbon (Cleanly balanced between LIVE INSPECTION and Arsitektur Komputer) */}
-              <div className="flex items-center justify-between pb-3.5 border-b-2 border-[#EAE7EB]">
-                <span className="px-3.5 py-1.5 rounded-full bg-[#0038D1] text-white text-xs font-black uppercase tracking-wider shadow-[1.5px_1.5px_0px_#1B1B1E]">
-                  LIVE INSPECTION
-                </span>
-
-                <span className="px-3.5 py-1.5 rounded-full bg-[#FFDDB8] border-2 border-[#1B1B1E] text-xs font-bold text-[#2A1700] shadow-[1px_1px_0px_#1B1B1E]">
-                  Arsitektur Komputer
-                </span>
-              </div>
-
-              {/* Inset Character Assessment Showcase */}
-              <div className="p-6 sm:p-7 rounded-2xl bg-[#F6F2F7] border border-[#1B1B1E]/20 shadow-[inset_2px_2px_0px_rgba(27,27,30,0.06)] flex flex-col items-center justify-center space-y-6">
-
-                {/* Floating Proposition Box in the Center */}
-                <div className="w-full max-w-[340px] bg-white border-2 border-[#1B1B1E] rounded-2xl shadow-[4px_4px_0px_#1B1B1E] p-3.5 space-y-3">
-                  <div className="flex items-center justify-between text-xs pb-1.5 border-b border-[#EAE7EB]">
-                    <span className="font-mono font-bold text-[#71717A] tracking-wider uppercase text-[11px]">
-                      PROPOSITION #12
-                    </span>
-                    <span className="font-black text-[#059669] flex items-center gap-1.5 text-xs">
-                      <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
-                      VALID TP
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2 text-xs font-bold pt-0.5">
-                    <span className="px-3.5 py-1.5 rounded-lg bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-[#0038D1] font-black text-xs">
-                      [CPU]
-                    </span>
-                    <span className="px-3 py-1 rounded-md bg-[#FFE4E6] border border-[#DA3437] text-[11px] font-black text-[#DA3437] flex items-center gap-1">
-                      contains &rarr;
-                    </span>
-                    <span className="px-3.5 py-1.5 rounded-lg bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-[#B45309] font-black text-xs">
-                      [ALU]
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4 Geometric Characters Group around the Roundtable */}
-                <div className="flex items-end justify-center gap-5 sm:gap-6 pt-2 pb-1">
-                  {/* Character 1: Prof. Blue */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-14 h-14 rounded-full bg-[#2F54EB] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0px_#1B1B1E] relative flex items-center justify-center gap-1.5">
-                      {/* Left eye */}
-                      <span className="w-2.5 h-2.5 rounded-full bg-white border border-[#1B1B1E] flex items-center justify-center">
-                        <span className="w-1 h-1 rounded-full bg-[#1B1B1E]"></span>
-                      </span>
-                      {/* Right eye */}
-                      <span className="w-2.5 h-2.5 rounded-full bg-white border border-[#1B1B1E] flex items-center justify-center">
-                        <span className="w-1 h-1 rounded-full bg-[#1B1B1E]"></span>
-                      </span>
-                      {/* Yellow verified badge */}
-                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#FFB95F] border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E] flex items-center justify-center text-[8px] font-black text-[#1B1B1E]">
-                        ✓
-                      </span>
-                    </div>
-                    <span className="text-xs font-serif font-bold text-[#1B1B1E] mt-2">
-                      Prof. Blue
-                    </span>
-                  </div>
-
-                  {/* Character 2: Mhs. Koko */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-xl bg-[#FFDDB8] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0px_#1B1B1E] flex items-center justify-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1B1B1E]"></span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1B1B1E]"></span>
-                    </div>
-                    <span className="text-xs font-serif font-bold text-[#1B1B1E] mt-2">
-                      Mhs. Koko
-                    </span>
-                  </div>
-
-                  {/* Character 3: Red Cone / Trapezoid */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-11 h-12 flex items-center justify-center">
-                      <svg width="44" height="46" viewBox="0 0 44 46" fill="none" className="drop-shadow-[2.5px_2.5px_0px_#1B1B1E]">
-                        <polygon points="14,6 30,6 42,42 2,42" fill="#B61722" stroke="#1B1B1E" strokeWidth="2.5" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    {/* Empty placeholder spacer to keep horizontal baseline aligned */}
-                    <span className="text-xs mt-2 opacity-0 select-none">&nbsp;</span>
-                  </div>
-
-                  {/* Character 4: Bot NetworkX */}
-                  <div className="flex flex-col items-center">
-                    <div className="w-12 h-14 rounded-t-full bg-[#059669] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0px_#1B1B1E] flex items-center justify-center gap-1.5 pt-3">
-                      <span className="w-2 h-2 rounded-full bg-white border border-[#1B1B1E] flex items-center justify-center">
-                        <span className="w-1 h-1 rounded-full bg-[#1B1B1E]"></span>
-                      </span>
-                      <span className="w-2 h-2 rounded-full bg-white border border-[#1B1B1E] flex items-center justify-center">
-                        <span className="w-1 h-1 rounded-full bg-[#1B1B1E]"></span>
-                      </span>
-                    </div>
-                    <span className="text-xs font-serif font-bold text-[#1B1B1E] mt-2">
-                      Bot NetworkX
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Tactical Annotation */}
-              <div className="p-3.5 rounded-2xl bg-[#F0EDF1] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#1B1B1E]">
-                  <MousePointer className="w-4 h-4 text-[#0038D1]" />
-                  <span>Klik & pasang kepingan node untuk verifikasi relasi</span>
-                </div>
-                <span className="px-2.5 py-1 rounded-md bg-white border border-[#1B1B1E] text-xs font-bold text-[#059669] shadow-[1px_1px_0px_#1B1B1E]">
-                  Kit-Build Active
-                </span>
-              </div>
-            </div>
+            <Interactive3DGraph />
           </div>
         </div>
 
@@ -250,7 +140,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
       </section>
 
       {/* SECTION: DEDICATED ROLE LOGIN SELECTOR (Dual Persona Portal Cards) */}
-      <section id="section-kit-build" className="px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-[#FAF7F2]">
+      <section id="section-kit-build" className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-16 sm:pb-20 bg-[#FAF7F2]">
         <div className="max-w-6xl mx-auto space-y-10">
 
           {/* Section Header */}
@@ -420,7 +310,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               {/* Action Button */}
               <div className="space-y-2 pt-2">
                 <button
-                  onClick={() => onNavigate('student')}
+                  type="button"
+                  onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onNavigate('student'))}
                   className="w-full py-3.5 sm:py-4 px-6 rounded-full bg-[#0038D1] hover:bg-[#1A4BDB] text-white font-bold text-sm sm:text-base border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
                 >
                   <span>Masuk sebagai Mahasiswa (NIM / SSO FILKOM)</span>
@@ -573,7 +464,8 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
               {/* Action Button */}
               <div className="space-y-2 pt-2">
                 <button
-                  onClick={() => onNavigate('teacher')}
+                  type="button"
+                  onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onNavigate('teacher'))}
                   className="w-full py-3.5 sm:py-4 px-6 rounded-full bg-[#1B1B1E] hover:bg-[#2A2A2E] text-white font-bold text-sm sm:text-base border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#1B1B1E] transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
                 >
                   <span>Masuk Portal Dosen (NIP / Akun Kampus)</span>
@@ -654,9 +546,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                    <span className="text-xs font-bold text-[#8E5900] hover:underline cursor-pointer inline-flex items-center gap-1">
-                      Ground Truth Tetap Presisi &rarr;
+                  <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-[#71717A]">Hasil Langkah:</span>
+                    <span className="font-bold text-[#8E5900] bg-[#FFDDB8]/40 px-2 py-0.5 rounded border border-[#FFDDB8] inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-[#8E5900] stroke-[2.5]" />
+                      Standar Emas Presisi
                     </span>
                   </div>
                 </div>
@@ -689,9 +583,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                    <span className="text-xs font-bold text-[#B61722] hover:underline cursor-pointer inline-flex items-center gap-1">
-                      Mahasiswa Rekonstruksi &rarr;
+                  <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-[#71717A]">Hasil Langkah:</span>
+                    <span className="font-bold text-[#B61722] bg-[#FFE4E6]/50 px-2 py-0.5 rounded border border-[#FFE4E6] inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-[#B61722] stroke-[2.5]" />
+                      Kit Siap Ditugaskan
                     </span>
                   </div>
                 </div>
@@ -724,9 +620,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                    <span className="text-xs font-bold text-[#0038D1] hover:underline cursor-pointer inline-flex items-center gap-1">
-                      Skor & Diagnosa Valid ✓
+                  <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-[#71717A]">Hasil Langkah:</span>
+                    <span className="font-bold text-[#0038D1] bg-[#EEF2FF] px-2 py-0.5 rounded border border-[#C7D2FE] inline-flex items-center gap-1">
+                      <Check className="w-3 h-3 text-[#0038D1] stroke-[2.5]" />
+                      100% Deterministik Graf
                     </span>
                   </div>
                 </div>
@@ -837,9 +735,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                  <span className="text-xs font-bold text-[#0038D1] hover:underline cursor-pointer inline-flex items-center gap-1">
-                    Kanvas Pengerjaan Bersih &rarr;
+                <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#71717A]">Hasil Sesi:</span>
+                  <span className="font-bold text-[#0038D1] bg-[#EEF2FF] px-2 py-0.5 rounded border border-[#C7D2FE] inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-[#0038D1] stroke-[2.5]" />
+                    Kanvas Bebas Tekanan
                   </span>
                 </div>
               </div>
@@ -879,9 +779,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                  <span className="text-xs font-bold text-[#8E5900] hover:underline cursor-pointer inline-flex items-center gap-1">
-                    Verifikasi Mandiri Bebas Tekanan &rarr;
+                <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#71717A]">Hasil Sesi:</span>
+                  <span className="font-bold text-[#8E5900] bg-[#FFDDB8]/40 px-2 py-0.5 rounded border border-[#FFDDB8] inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-[#8E5900] stroke-[2.5]" />
+                    Struktur Proposisi Utuh
                   </span>
                 </div>
               </div>
@@ -914,9 +816,11 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#EAE7EB] text-right">
-                  <span className="text-xs font-bold text-[#059669] hover:underline cursor-pointer inline-flex items-center gap-1">
-                    Pemahaman Mendalam Terbentuk ✓
+                <div className="pt-2.5 border-t border-[#EAE7EB] flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-[#71717A]">Hasil Sesi:</span>
+                  <span className="font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#A7F3D0] inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-[#059669] stroke-[2.5]" />
+                    Diagnosa & Remedial Cepat
                   </span>
                 </div>
               </div>

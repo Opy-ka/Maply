@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar, ActiveTab } from '../components/Navbar';
 import { OnboardingView } from '../components/OnboardingView';
 import { StudentView } from '../components/StudentView';
+import { StudentDashboardView } from '../components/StudentDashboardView';
+import { StudentEvaluationView } from '../components/StudentEvaluationView';
 import { TeacherView } from '../components/TeacherView';
 import { AnalyticsView } from '../components/AnalyticsView';
 import { EvaluationModal } from '../components/EvaluationModal';
@@ -31,6 +33,7 @@ export default function Home() {
   const [mapVersion, setMapVersion] = useState(0);
   const [analytics, setAnalytics] = useState<ClassKnowledgeGapSummary | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+  const [studentSubView, setStudentSubView] = useState<'dashboard' | 'workspace' | 'evaluation'>('dashboard');
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,12 +57,16 @@ export default function Home() {
   const handleEnterExamWithToken = (token: string) => {
     setActiveExamToken(token);
     setCurrentTab('student');
-    showToast(`✓ Sesi Ujian Aktif dengan Token ${token}. Selamat mengerjakan!`);
+    setStudentSubView('workspace');
+    showToast(`✓ Memulai sesi pengerjaan Kit Map dengan Token ${token}!`);
   };
 
   const handleLoginSuccess = (role: 'student' | 'teacher', userName: string) => {
     setCurrentTab(role === 'student' ? 'student' : 'teacher');
-    showToast(`✓ Berhasil masuk sebagai ${userName}`);
+    if (role === 'student') {
+      setStudentSubView('dashboard');
+    }
+    showToast(`✓ Berhasil masuk ke Portal Mahasiswa sebagai ${userName}`);
   };
 
   const handleAssessmentPublished = (token: string, newConfig: AssessmentConfig) => {
@@ -130,9 +137,93 @@ export default function Home() {
 
   const handleEvaluationComplete = async (res: EvaluationResult) => {
     setEvaluationResult(res);
+    setStudentSubView('evaluation');
     if (backendOnline) {
       setAnalytics(await fetchClassAnalytics(assessmentConfig.id));
     }
+    showToast(`✓ Evaluasi graf selesai: Skor ${res.total_score}/100`);
+  };
+
+  const sampleEvaluationResult: EvaluationResult = {
+    student_id: 'std-215150201111001',
+    student_name: 'M. Fadhil',
+    assessment_id: assessmentConfig.id,
+    concept_recognition_score: 100,
+    relationship_accuracy_score: 83.3,
+    structural_understanding_score: 80.5,
+    total_score: 86,
+    metrics: {
+      true_positive: 5,
+      false_positive: 1,
+      false_negative: 1,
+      precision: 0.83,
+      recall: 0.83,
+      f1_score: 0.83
+    },
+    knowledge_gaps: [
+      'Mahasiswa memahami komponen CPU dan Cache, tetapi belum mengaitkan relasi langsung antara ALU dengan Register secara presisi.',
+      'Perlu penguatan pada siklus transfer data bus internal antara Register dan Unit Kontrol.'
+    ],
+    strengths: [
+      'Presensi seluruh simpul konsep utama acuan mencapai 100%',
+      'Struktur koneksi hierarki terarah CPU, Control Unit, dan ALU tervalidasi presisi'
+    ],
+    evaluated_edges: [
+      {
+        source: 'cpu',
+        target: 'alu',
+        label: 'contains',
+        status: 'correct',
+        source_label: 'CPU',
+        target_label: 'ALU',
+        note: 'Sesuai dengan Master Ground Truth'
+      },
+      {
+        source: 'cpu',
+        target: 'cu',
+        label: 'contains',
+        status: 'correct',
+        source_label: 'CPU',
+        target_label: 'Control Unit',
+        note: 'Sesuai dengan Master Ground Truth'
+      },
+      {
+        source: 'cpu',
+        target: 'register',
+        label: 'contains',
+        status: 'correct',
+        source_label: 'CPU',
+        target_label: 'Register',
+        note: 'Sesuai dengan Master Ground Truth'
+      },
+      {
+        source: 'cpu',
+        target: 'cache',
+        label: 'interacts with',
+        status: 'correct',
+        source_label: 'CPU',
+        target_label: 'Cache Memory',
+        note: 'Sesuai dengan Master Ground Truth'
+      },
+      {
+        source: 'alu',
+        target: 'register',
+        label: 'transfers data to',
+        status: 'missing',
+        source_label: 'ALU',
+        target_label: 'Register',
+        note: 'Relasi kunci yang belum terhubung di kanvas'
+      },
+      {
+        source: 'alu',
+        target: 'cache',
+        label: 'controls',
+        status: 'incorrect',
+        source_label: 'ALU',
+        target_label: 'Cache Memory',
+        note: 'Miskonsepsi: ALU tidak mengontrol Cache (tugas Control Unit)'
+      }
+    ]
   };
 
   if (isLoading || !kit || !analytics) {
@@ -174,7 +265,39 @@ export default function Home() {
         )}
 
         {currentTab === 'student' && (
-          <StudentView key={`kit-${kitVersion}`} kit={kit} onEvaluationComplete={handleEvaluationComplete} />
+          <>
+            {studentSubView === 'dashboard' && (
+              <StudentDashboardView
+                assessmentConfig={assessmentConfig}
+                kit={kit}
+                onStartWorkspace={() => setStudentSubView('workspace')}
+                onEnterToken={(tok) => handleEnterExamWithToken(tok)}
+                onViewResults={() => {
+                  if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                  setStudentSubView('evaluation');
+                }}
+              />
+            )}
+
+            {studentSubView === 'workspace' && (
+              <StudentView
+                key={`kit-${kitVersion}`}
+                kit={kit}
+                assessmentConfig={assessmentConfig}
+                onEvaluationComplete={handleEvaluationComplete}
+                onBackToDashboard={() => setStudentSubView('dashboard')}
+              />
+            )}
+
+            {studentSubView === 'evaluation' && (
+              <StudentEvaluationView
+                result={evaluationResult || sampleEvaluationResult}
+                assessmentConfig={assessmentConfig}
+                onBackToDashboard={() => setStudentSubView('dashboard')}
+                onRetakeWorkspace={() => setStudentSubView('workspace')}
+              />
+            )}
+          </>
         )}
 
         {currentTab === 'teacher' && (

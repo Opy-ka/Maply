@@ -190,13 +190,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-1 p-1 rounded-full bg-[#EAE7EB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs select-none">
               <span className="px-2 text-xs font-serif font-bold text-[#444655]">Akses:</span>
               <button
-                onClick={() => onTabChange('student')}
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
                 className="px-3.5 py-1 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white font-serif font-black text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
               >
                 Mahasiswa
               </button>
               <button
-                onClick={() => onTabChange('teacher')}
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onTabChange('teacher'))}
                 className="px-3.5 py-1 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] border border-[#1B1B1E] font-serif font-bold text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
               >
                 Dosen
