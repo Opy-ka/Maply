@@ -9,7 +9,11 @@ class KitGenerator:
     """
 
     @staticmethod
-    def generate_kit(master_map: MasterConceptMap, shuffle: bool = True) -> ConceptKit:
+    def generate_kit(
+        master_map: MasterConceptMap,
+        shuffle: bool = True,
+        distractors: List[str] = None
+    ) -> ConceptKit:
         concepts = [
             ConceptNode(
                 id=node.id,
@@ -19,6 +23,19 @@ class KitGenerator:
             )
             for node in master_map.nodes
         ]
+
+        # Inject distractor nodes if configured
+        if distractors:
+            for idx, dist in enumerate(distractors):
+                if dist and dist.strip():
+                    concepts.append(
+                        ConceptNode(
+                            id=f"distractor-{idx+1}",
+                            label=dist.strip(),
+                            description="Pengecoh Konsep",
+                            group="distractor"
+                        )
+                    )
 
         # Extract unique relationship labels used in the master map
         unique_labels = sorted(list({edge.label for edge in master_map.edges if edge.label}))

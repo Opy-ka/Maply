@@ -20,11 +20,14 @@ import {
   Lock,
   Lightbulb
 } from 'lucide-react';
-import { AssessmentConfig, ConceptKit } from '../types/maply';
+import { AssessmentConfig, ConceptKit, EvaluationResult } from '../types/maply';
 
 interface StudentDashboardViewProps {
   assessmentConfig: AssessmentConfig;
   kit: ConceptKit;
+  studentName?: string;
+  studentNim?: string;
+  submissions?: EvaluationResult[];
   onStartWorkspace: () => void;
   onEnterToken: (token: string) => void;
   onViewResults: () => void;
@@ -86,12 +89,36 @@ const KIT_BUILD_TIPS = [
 export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
   assessmentConfig,
   kit,
+  studentName = 'Mahasiswa',
+  studentNim = '-',
+  submissions = [],
   onStartWorkspace,
   onEnterToken,
   onViewResults
 }) => {
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
+
+  // Compute real dynamic statistics
+  const completedCount = submissions.length;
+  const avgScore = completedCount > 0
+    ? (submissions.reduce((acc, curr) => acc + curr.total_score, 0) / completedCount).toFixed(1)
+    : '-';
+  const totalTP = completedCount > 0
+    ? submissions.reduce((acc, curr) => acc + (curr.metrics?.true_positive || 0), 0)
+    : 0;
+  const totalGaps = completedCount > 0
+    ? submissions.reduce((acc, curr) => acc + (curr.knowledge_gaps?.length || 0), 0)
+    : 0;
+
+  // Dynamic Hirashima Mental Model Topology
+  const avgStructural = completedCount > 0
+    ? submissions.reduce((acc, curr) => acc + (curr.structural_understanding_score || 0), 0) / completedCount
+    : 0;
+  const netPercent = completedCount > 0 ? Math.min(95, Math.max(15, Math.round(avgStructural))) : 0;
+  const remainingPercent = 100 - netPercent;
+  const chainPercent = completedCount > 0 ? Math.round(remainingPercent * 0.72) : 0;
+  const spokePercent = completedCount > 0 ? Math.max(0, 100 - netPercent - chainPercent) : 0;
 
   // Interactive rotating tips & tricks carousel state (pure slide geser)
   const [activeTipIndex, setActiveTipIndex] = useState(0);
@@ -134,7 +161,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
   return (
     <div className="bg-[#FAF7F2] text-[#1B1B1E] min-h-screen pb-16">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
-        {/* Top Student Greeting Card & Cognitive Persona (Figma #57:12175) */}
+        {/* Top Student Greeting Card & Cognitive Persona */}
         <div className="p-6 sm:p-8 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E]">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
             {/* Left side: Greeting, Context & Academic Persona */}
@@ -142,7 +169,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               <div className="flex flex-wrap items-center gap-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#DEE1FF] border border-[#1B1B1E] text-xs font-bold text-[#001257]">
                   <span className="w-2 h-2 rounded-full bg-[#0038D1]"></span>
-                  <span>SEMESTER GANJIL 2026/2027 &bull; FILKOM UB</span>
+                  <span>SEMESTER AKADEMIK AKTIF &bull; FILKOM UB</span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[10px] font-mono font-bold text-[#065F46]">
                   Mahasiswa Aktif
@@ -150,7 +177,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-serif font-black text-[#1B1B1E] tracking-tight">
-                Halo, Ahmad Rizky 👋
+                Halo, {studentName} 👋
               </h1>
 
               <p className="text-xs sm:text-sm text-[#444655] max-w-xl leading-relaxed">
@@ -160,18 +187,18 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               {/* Student Personification Meta Badges */}
               <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
                 <span className="px-2.5 py-1 rounded-lg bg-[#FAF7F2] border border-[#1B1B1E] font-mono text-[11px] font-bold text-[#1B1B1E]">
-                  NIM: 235150201111048
+                  NIM: {studentNim}
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-[#FAF7F2] border border-[#1B1B1E] font-bold text-[11px] text-[#1B1B1E]">
                   Teknik Informatika
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-[#F6F2F7] border border-[#1B1B1E] font-mono font-bold text-[10.5px] text-[#0038D1]">
-                  Personifikasi: Relational Thinker
+                  Status: {completedCount > 0 ? 'Relational Thinker' : 'Pengguna Baru'}
                 </span>
               </div>
             </div>
 
-            {/* Right side: Karakteristik Struktur Hirashima (Personifikasi Kognitif Topologi) */}
+            {/* Right side: Karakteristik Struktur Hirashima */}
             <div className="lg:col-span-5 p-4 sm:p-5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-3">
               <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-[#1B1B1E]/10">
                 <div className="min-w-0 pr-1">
@@ -184,53 +211,52 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                 </div>
                 <div className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-[10px] font-mono font-bold text-[#0038D1] whitespace-nowrap select-none">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#0038D1] shrink-0" />
-                  <span>6 Modul Tervalidasi</span>
+                  <span>{completedCount} Modul Tuntas</span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {/* Net Structure */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-[#1B1B1E]">Net Structure (Jejaring Kompleks)</span>
-                    <span className="font-mono text-[#0038D1]">68%</span>
+              {completedCount === 0 ? (
+                <div className="py-6 text-center text-xs text-[#71717A] font-bold">
+                  Belum ada asesmen yang diselesaikan. Selesaikan asesmen pertama Anda untuk melihat karakteristik topologi kognitif Anda.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-[#1B1B1E]">Net Structure (Jejaring Kompleks)</span>
+                      <span className="font-mono text-[#0038D1]">{netPercent}%</span>
+                    </div>
+                    <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
+                      <div className="bg-[#0038D1] h-2 rounded-full transition-all duration-500" style={{ width: `${netPercent}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
-                    <div className="bg-[#0038D1] h-2 rounded-full" style={{ width: '68%' }} />
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-[#1B1B1E]">Chain Structure (Rantai Linier)</span>
+                      <span className="font-mono text-[#059669]">{chainPercent}%</span>
+                    </div>
+                    <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
+                      <div className="bg-[#059669] h-2 rounded-full transition-all duration-500" style={{ width: `${chainPercent}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-[#1B1B1E]">Spoke Structure (Pusat / Bintang)</span>
+                      <span className="font-mono text-[#D97706]">{spokePercent}%</span>
+                    </div>
+                    <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
+                      <div className="bg-[#D97706] h-2 rounded-full transition-all duration-500" style={{ width: `${spokePercent}%` }} />
+                    </div>
                   </div>
                 </div>
-
-                {/* Chain Structure */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-[#1B1B1E]">Chain Structure (Rantai Linier)</span>
-                    <span className="font-mono text-[#059669]">24%</span>
-                  </div>
-                  <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
-                    <div className="bg-[#059669] h-2 rounded-full" style={{ width: '24%' }} />
-                  </div>
-                </div>
-
-                {/* Spoke Structure */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-[#1B1B1E]">Spoke Structure (Pusat / Bintang)</span>
-                    <span className="font-mono text-[#D97706]">8%</span>
-                  </div>
-                  <div className="w-full bg-white border border-[#1B1B1E] rounded-full h-2 overflow-hidden">
-                    <div className="bg-[#D97706] h-2 rounded-full" style={{ width: '8%' }} />
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-[10px] text-[#444655] leading-tight pt-1 border-t border-[#1B1B1E]/10">
-                Dominasi <strong>Net Structure (68%)</strong> menunjukkan pemahaman relasional non-linier yang matang.
-              </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Section 2: Cognitive Summary Metric Cards (Figma #57:12195 - 4 Cards) */}
+        {/* Section 2: Cognitive Summary Metric Cards (REAL DATA) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between">
@@ -239,11 +265,14 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </div>
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#0038D1] tabular-nums">82.4</span>
-                <span className="text-xs font-bold text-[#71717A]">/ 100</span>
-                <span className="text-[10.5px] font-mono font-bold text-[#059669] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">+4.2%</span>
+                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#0038D1] tabular-nums">
+                  {avgScore}
+                </span>
+                {avgScore !== '-' && <span className="text-xs font-bold text-[#71717A]">/ 100</span>}
               </div>
-              <p className="text-[11px] text-[#444655] mt-1.5">Skor rata-rata pemahaman konseptual</p>
+              <p className="text-[11px] text-[#444655] mt-1.5">
+                {completedCount > 0 ? `Rata-rata ${completedCount} asesmen tuntas` : 'Belum ada data asesmen'}
+              </p>
             </div>
             <div className="pt-2 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[10px] font-mono text-[#71717A]">
               <span>Evaluasi Graf</span>
@@ -253,22 +282,21 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
 
           <div className="p-5 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold text-[#71717A] uppercase tracking-wider">Progres Penugasan</span>
+              <span className="text-[11px] font-mono font-bold text-[#71717A] uppercase tracking-wider">Modul Tuntas</span>
               <CheckCircle2 className="w-4 h-4 text-[#059669]" />
             </div>
             <div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#1B1B1E] tabular-nums">6</span>
-                <span className="text-xl font-bold text-[#71717A] font-sans">/</span>
-                <span className="text-2xl font-bold text-[#71717A] font-sans tabular-nums">8</span>
+                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#1B1B1E] tabular-nums">
+                  {completedCount}
+                </span>
                 <span className="text-xs font-bold text-[#71717A] ml-1">Modul</span>
-                <span className="text-[10.5px] font-mono font-bold text-[#1B1B1E] bg-[#FAF7F2] px-1.5 py-0.5 rounded border border-[#1B1B1E]/20">75%</span>
               </div>
-              <p className="text-[11px] text-[#444655] mt-1.5 font-medium">Lintas 4 Mata Kuliah Semester Ganjil</p>
+              <p className="text-[11px] text-[#444655] mt-1.5 font-medium">Asesmen yang telah diselesaikan</p>
             </div>
             <div className="pt-2 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[10px] font-mono text-[#71717A]">
-              <span>Tersedia Hari Ini</span>
-              <span className="font-bold text-[#059669]">1 Modul Siap</span>
+              <span>Status</span>
+              <span className="font-bold text-[#059669]">{completedCount > 0 ? 'Tervalidasi' : 'Siap Mulai'}</span>
             </div>
           </div>
 
@@ -279,46 +307,51 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </div>
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#059669] tabular-nums">48</span>
+                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#059669] tabular-nums">
+                  {totalTP}
+                </span>
                 <span className="text-xs font-bold text-[#059669]">Relasi</span>
-                <span className="text-[10.5px] font-mono font-bold text-[#059669] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">88.9%</span>
               </div>
               <p className="text-[11px] text-[#444655] mt-1.5">Akurasi triple &lt;S, P, O&gt; tervalidasi</p>
             </div>
             <div className="pt-2 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[10px] font-mono text-[#71717A]">
-              <span>Akurasi Busur</span>
-              <span className="font-bold text-[#059669]">Sangat Tinggi</span>
+              <span>Kaidah Master Map</span>
+              <span className="font-bold text-[#059669]">{totalTP > 0 ? 'Tercatat' : 'Belum Ada'}</span>
             </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-[#FFE4E6] border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] flex flex-col justify-between space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono font-bold text-[#DA3437] uppercase tracking-wider">Diagnosa Kritis</span>
+              <span className="text-[11px] font-mono font-bold text-[#DA3437] uppercase tracking-wider">Miskonsepsi Terdeteksi</span>
               <AlertTriangle className="w-4 h-4 text-[#DA3437]" />
             </div>
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#DA3437] tabular-nums">2</span>
-                <span className="text-xs font-bold text-[#DA3437]">Miskonsepsi</span>
+                <span className="text-3xl sm:text-4xl font-sans font-black tracking-tight text-[#DA3437] tabular-nums">
+                  {totalGaps}
+                </span>
+                <span className="text-xs font-bold text-[#DA3437]">Kesenjangan</span>
               </div>
-              <p className="text-[11px] text-[#7F1D1D] mt-1.5">Hubungan terbalik terdeteksi di graf</p>
+              <p className="text-[11px] text-[#7F1D1D] mt-1.5">Relasi tidak tepat atau terlewat</p>
             </div>
             <div className="pt-2 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[10px] font-mono text-[#DA3437]">
-              <span>Perlu Remedial</span>
-              <span className="font-bold underline cursor-pointer" onClick={onViewResults}>Tinjau Graf →</span>
+              <span>Tindak Lanjut</span>
+              <span className="font-bold underline cursor-pointer" onClick={onViewResults}>
+                {completedCount > 0 ? 'Tinjau Graf →' : 'Ikuti Asesmen'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Section 3: Primary Active Assessment Card (Aligned with Image 1) */}
+        {/* Section 3: Primary Active Assessment Card (Connected to Backend) */}
         <div className="p-6 sm:p-7 rounded-3xl bg-[#FFEAA7] border-2 border-[#1B1B1E] shadow-[5px_5px_0px_#1B1B1E] space-y-4">
           {/* Header Row: Left Badge, Center Target Icon, Right Timer & Deadline */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Left Pill: Green dot + ASESMEN AKTIF • ARSITEKTUR KOMPUTER #07 */}
+            {/* Left Pill: Green dot + ASESMEN AKTIF */}
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
               <span className="font-mono text-xs font-black uppercase tracking-wider text-[#1B1B1E]">
-                ASESMEN AKTIF &bull; ARSITEKTUR KOMPUTER #07
+                ASESMEN AKTIF &bull; {assessmentConfig.id.toUpperCase()}
               </span>
             </div>
 
@@ -327,15 +360,15 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               <span className="w-2 h-2 rounded-full bg-[#1B1B1E]"></span>
             </div>
 
-            {/* Right Badges: Batas Waktu & Tenggat */}
+            {/* Right Badges: Batas Waktu & Token */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-white border border-[#1B1B1E] text-xs font-bold text-[#1B1B1E] flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
                 <Clock className="w-3.5 h-3.5 text-[#0038D1]" />
-                <span>Batas Waktu: {assessmentConfig.time_limit_minutes || 45} Menit</span>
+                <span>Batas Waktu: {assessmentConfig.duration_minutes || assessmentConfig.time_limit_minutes || 30} Menit</span>
               </span>
-              <span className="px-3.5 py-1 rounded-full bg-[#DA3437] text-white border border-[#1B1B1E] text-xs font-bold flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
-                <Calendar className="w-3.5 h-3.5 text-white" />
-                <span>Tenggat: Hari Ini, 23:59 WIB</span>
+              <span className="px-3.5 py-1 rounded-full bg-[#0038D1] text-white border border-[#1B1B1E] text-xs font-bold flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
+                <KeyRound className="w-3.5 h-3.5 text-white" />
+                <span>Token: {assessmentConfig.exam_token || 'KBT-9428'}</span>
               </span>
             </div>
           </div>
@@ -343,10 +376,10 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           {/* Assessment Title & Subtitle */}
           <div className="space-y-2 pt-1">
             <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#1B1B1E] tracking-tight">
-              Kuis Pemahaman Konseptual CPU
+              {assessmentConfig.title}
             </h2>
             <p className="text-xs sm:text-sm text-[#444655] max-w-4xl leading-relaxed">
-              Rangkai konsep tahapan eksekusi instruksi 5-stage pipeline (IF, ID, EX, MEM, WB) serta resolusi Data Hazard (Forwarding Unit) dan Control Hazard (Branch Prediction) sesuai model mental Master Map Dosen.
+              {assessmentConfig.description || 'Rekonstruksi kepingan konsep dan relasi berarah sesuai struktur acuan dosen.'}
             </p>
           </div>
 
@@ -355,15 +388,15 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-bold text-[#1B1B1E]">
               <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
                 <Layers className="w-3.5 h-3.5 text-[#0038D1]" />
-                5 Kepingan Konsep
+                {kit?.concepts?.length || 5} Kepingan Konsep
               </span>
               <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
                 <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
-                5 Tipe Relasi
+                {kit?.available_relationships?.length || 5} Tipe Relasi
               </span>
               <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
-                <Clock className="w-3.5 h-3.5 text-[#DA3437]" />
-                Ujian Terjadwal
+                <ShieldCheck className="w-3.5 h-3.5 text-[#DA3437]" />
+                Sesi Ujian Aktif
               </span>
             </div>
 
@@ -441,39 +474,38 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Upcoming Assessments (Asesmen yang Akan Datang - Sisa 2 Modul Menuju 8/8) */}
+          {/* Right Column: Active & Upcoming Database Assessments */}
           <div className="lg:col-span-7 p-5 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-[#1B1B1E]/10">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#0038D1]" />
                 <h3 className="text-sm sm:text-base font-serif font-black text-[#1B1B1E]">
-                  Asesmen yang Akan Datang
+                  Asesmen Terjadwal di Database
                 </h3>
               </div>
               <span className="px-2.5 py-0.5 rounded-full bg-[#FAF7F2] border border-[#1B1B1E] text-[10px] font-mono font-bold text-[#1B1B1E]">
-                2 Modul Tersisa &bull; Target 8/8 Selesai
+                1 Asesmen Aktif
               </span>
             </div>
 
             <div className="space-y-2">
-              {/* Modul 07: Aktif Hari Ini */}
               <div className="p-3 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[9.5px] font-mono font-black text-[#065F46] uppercase flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
-                      Aktif Hari Ini
+                      Aktif Sekarang
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-white border border-[#1B1B1E] text-[9.5px] font-mono font-bold text-[#0038D1]">
-                      Arsitektur Komputer
+                      {assessmentConfig.id}
                     </span>
-                    <span className="text-[10px] font-mono text-[#71717A]">Batas: 23:59 WIB</span>
+                    <span className="text-[10px] font-mono text-[#71717A]">Token: {assessmentConfig.exam_token || 'KBT-9428'}</span>
                   </div>
                   <h4 className="font-bold text-xs text-[#1B1B1E] truncate">
-                    Modul 07: Pipelining Prosesor & Penanganan Hazard
+                    {assessmentConfig.title}
                   </h4>
                   <p className="text-[10.5px] text-[#444655]">
-                    5-Stage Execution (IF-ID-EX-MEM-WB), Data Hazards & Branching &bull; Durasi: 45 Menit
+                    {assessmentConfig.description || 'Rekonstruksi kepingan konsep dan relasi berarah.'} &bull; Durasi: {assessmentConfig.duration_minutes || 30} Menit
                   </p>
                 </div>
                 <button
@@ -484,37 +516,11 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-
-              {/* Modul 08: Segera Dibuka / Terjadwal */}
-              <div className="p-3 rounded-xl bg-[#FAF7F2]/60 border-2 border-[#1B1B1E]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div className="space-y-1 min-w-0 opacity-80">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-full bg-[#FFEAA7] border border-[#1B1B1E] text-[9.5px] font-mono font-black text-[#1B1B1E] uppercase flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[#1B1B1E]" />
-                      Segera Dibuka
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-white border border-[#1B1B1E] text-[9.5px] font-mono font-bold text-[#059669]">
-                      Sistem Operasi
-                    </span>
-                    <span className="text-[10px] font-mono text-[#71717A]">Jadwal: 20 Okt 2026, 08:00 WIB</span>
-                  </div>
-                  <h4 className="font-bold text-xs text-[#1B1B1E] truncate">
-                    Modul 08: Arsitektur Multicore, Parallelism & Cache Coherence
-                  </h4>
-                  <p className="text-[10.5px] text-[#444655]">
-                    Shared Memory, Protokol MESI & Thread Synchronization &bull; Batas: 22 Okt 2026, 23:59 WIB
-                  </p>
-                </div>
-                <div className="shrink-0 px-3 py-1.5 rounded-lg bg-[#FAF7F2] text-[#71717A] text-[11px] font-bold border border-[#1B1B1E]/30 flex items-center justify-center gap-1 select-none">
-                  <Lock className="w-3 h-3" />
-                  <span>Terkunci</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Section 5: Two-column Cognitive Diagnostics & Assessment History (Evenly Balanced) */}
+        {/* Section 5: Two-column Cognitive Diagnostics & Assessment History */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* Left Column: Retensi Kognitif & Diagnosa Miskonsepsi */}
           <div className="p-6 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] space-y-4 flex flex-col justify-between">
@@ -528,78 +534,59 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                 </div>
                 <div className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF2FF] border border-[#0038D1] text-[10px] font-mono font-bold text-[#0038D1] whitespace-nowrap shadow-[1px_1px_0px_#1B1B1E] select-none leading-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#0038D1] shrink-0" />
-                  <span className="whitespace-nowrap">Diagnosa Graf Kognitif &bull; Akumulatif</span>
+                  <span className="whitespace-nowrap">Diagnosa Graf Kognitif</span>
                 </div>
               </div>
 
-              <p className="text-xs text-[#444655] leading-relaxed">
-                Sistem Kit-Build mengidentifikasi titik friksi konseptual aktif dari riwayat pengerjaan modul Anda yang belum selaras dengan Master Map Dosen:
-              </p>
-
-              {/* Identified Misconceptions List */}
-              <div className="space-y-3">
-                <div className="p-3.5 rounded-xl bg-[#FFFBEB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-white border border-[#1B1B1E] text-[10px] font-mono font-black text-[#1B1B1E]">
-                        Arsitektur Komputer &bull; Modul 04
-                      </span>
-                      <span className="text-[10.5px] font-mono font-black uppercase text-[#B45309]">
-                        Miskonsepsi 01 &bull; Proposisi Terbalik
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full bg-[#FEE2E2] border border-[#1B1B1E] text-[10px] font-bold text-[#DC2626] shrink-0">
-                      Kritis
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 font-mono text-xs font-bold">
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#1B1B1E]">[CPU]</span>
-                    <span className="text-[#DC2626]">── controls ──▶</span>
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#1B1B1E]">[Register]</span>
-                  </div>
-                  <p className="text-[11px] text-[#444655] leading-relaxed">
-                    <strong>Koreksi Pedagogis:</strong> Register adalah komponen internal penyimpanan sementara kecepatan tinggi di dalam CPU itu sendiri, bukan periferal eksternal yang menerima sinyal kendali bus dari CU.
+              {completedCount === 0 ? (
+                <div className="py-10 text-center space-y-2 bg-[#FAF7F2] rounded-xl border border-[#1B1B1E]/20 p-4">
+                  <FileText className="w-8 h-8 text-[#71717A] mx-auto" />
+                  <p className="text-xs font-bold text-[#1B1B1E]">Belum Ada Riwayat Pengerjaan</p>
+                  <p className="text-[11px] text-[#71717A] max-w-sm mx-auto">
+                    Kerjakan asesmen di atas untuk memetakan diagnosa miskonsepsi dan retensi kognitif Anda secara langsung.
                   </p>
                 </div>
-
-                <div className="p-3.5 rounded-xl bg-[#FFFBEB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-white border border-[#1B1B1E] text-[10px] font-mono font-black text-[#1B1B1E]">
-                        Sistem Operasi &bull; Modul 05
-                      </span>
-                      <span className="text-[10.5px] font-mono font-black uppercase text-[#B45309]">
-                        Miskonsepsi 02 &bull; Salah Klasifikasi Hierarki
-                      </span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full bg-[#FFEAA7] border border-[#1B1B1E] text-[10px] font-bold text-[#1B1B1E] shrink-0">
-                      Sedang
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 font-mono text-xs font-bold">
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#1B1B1E]">[Virtual Memory]</span>
-                    <span className="text-[#D97706]">── part of ──▶</span>
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#1B1B1E]">[Cache L1]</span>
-                  </div>
-                  <p className="text-[11px] text-[#444655] leading-relaxed">
-                    <strong>Koreksi Pedagogis:</strong> Virtual Memory dikelola oleh MMU OS pada secondary storage (disk), bukan bagian dari SRAM Cache L1 internal prosesor.
+              ) : totalGaps === 0 ? (
+                <div className="py-10 text-center space-y-2 bg-[#FAF7F2] rounded-xl border border-[#1B1B1E]/20 p-4">
+                  <CheckCircle2 className="w-8 h-8 text-[#059669] mx-auto" />
+                  <p className="text-xs font-bold text-[#1B1B1E]">Tidak Ada Miskonsepsi Kritis Terdeteksi</p>
+                  <p className="text-[11px] text-[#71717A] max-w-sm mx-auto">
+                    Seluruh proposisi yang Anda rangkai telah sesuai dengan struktur graf acuan dosen.
                   </p>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {submissions[0]?.knowledge_gaps?.slice(0, 3).map((gap, idx) => (
+                    <div key={idx} className="p-3.5 rounded-xl bg-[#FFFBEB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2 py-0.5 rounded bg-white border border-[#1B1B1E] text-[10px] font-mono font-black text-[#1B1B1E]">
+                          Celah Kognitif #{idx + 1}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#FEE2E2] border border-[#1B1B1E] text-[10px] font-bold text-[#DC2626]">
+                          Perlu Penguatan
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold text-[#1B1B1E]">{gap}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {completedCount > 0 && (
+              <div className="pt-3 border-t border-[#1B1B1E]/10 flex justify-end">
+                <button
+                  onClick={onViewResults}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#EEF2FF] text-[#0038D1] border-2 border-[#1B1B1E] font-bold text-xs shadow-[2px_2px_0px_#1B1B1E] cursor-pointer transition-all"
+                >
+                  <span>Lihat Analisis Graf Komparatif Lengkap</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-            </div>
-
-            <div className="pt-3 border-t border-[#1B1B1E]/10 flex justify-end">
-              <button
-                onClick={onViewResults}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#EEF2FF] text-[#0038D1] border-2 border-[#1B1B1E] font-bold text-xs shadow-[2px_2px_0px_#1B1B1E] cursor-pointer transition-all"
-              >
-                <span>Lihat Analisis Graf Komparatif Lengkap</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Right Column: Riwayat Pengerjaan Asesmen (6 Modul Tuntas Sesuai Progress 6/8) */}
+          {/* Right Column: Riwayat Pengerjaan Asesmen (REAL DATA ONLY) */}
           <div className="p-6 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-3 border-b-2 border-[#FAF7F2]">
@@ -609,109 +596,72 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                     Riwayat Pengerjaan Asesmen
                   </h3>
                 </div>
-                <button
-                  onClick={onViewResults}
-                  className="text-xs font-bold text-[#0038D1] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Hasil Graf Terakhir</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-[#71717A]">
-                <span>6 dari 8 modul telah diselesaikan</span>
-                <span className="font-mono font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#A7F3D0]">
-                  Rata-rata: 88.9% Akurasi
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {[
-                  {
-                    title: 'Modul 06: Sistem Bus & Manajemen I/O',
-                    course: 'Arsitektur Komputer',
-                    courseBadge: 'bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]',
-                    score: 84,
-                    date: 'Kemarin',
-                    propositions: '14 Proposisi',
-                    status: 'Tuntas'
-                  },
-                  {
-                    title: 'Modul 05: Sinkronisasi Thread & Deadlock',
-                    course: 'Sistem Operasi',
-                    courseBadge: 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
-                    score: 86,
-                    date: '12 Okt 2026',
-                    propositions: '16 Proposisi',
-                    status: 'Tuntas'
-                  },
-                  {
-                    title: 'Modul 04: Normalisasi Basis Data & Relasional',
-                    course: 'Basis Data',
-                    courseBadge: 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
-                    score: 82,
-                    date: '10 Okt 2026',
-                    propositions: '12 Proposisi',
-                    status: 'Perlu Penguatan'
-                  },
-                  {
-                    title: 'Modul 03: Arsitektur Von Neumann & Siklus CPU',
-                    course: 'Arsitektur Komputer',
-                    courseBadge: 'bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]',
-                    score: 88,
-                    date: '06 Okt 2026',
-                    propositions: '15 Proposisi',
-                    status: 'Tuntas'
-                  }
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] flex items-center justify-between gap-3 shadow-[1.5px_1.5px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
+                {completedCount > 0 && (
+                  <button
+                    onClick={onViewResults}
+                    className="text-xs font-bold text-[#0038D1] hover:underline flex items-center gap-1 cursor-pointer"
                   >
-                    <div className="space-y-0.5 min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`px-1.5 py-0.2 rounded border text-[9px] font-mono font-bold ${item.courseBadge}`}>
-                          {item.course}
-                        </span>
-                        <h4 className="font-bold text-xs text-[#1B1B1E] truncate">{item.title}</h4>
-                      </div>
-                      <span className="text-[9.5px] font-mono text-[#71717A] block">
-                        {item.date} &bull; {item.propositions}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 shrink-0">
-                      {/* Status Badge: Tuntas = Hijau, Perlu Penguatan = Kuning/Amber */}
-                      {item.status === 'Tuntas' ? (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-black uppercase px-2.5 py-1 rounded-full bg-[#ECFDF5] text-[#065F46] border border-[#059669]">
-                          <CheckCircle2 className="w-3 h-3 text-[#059669] shrink-0" />
-                          <span>Tuntas</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-black uppercase px-2.5 py-1 rounded-full bg-[#FFFBEB] text-[#B45309] border border-[#D97706]">
-                          <AlertTriangle className="w-3 h-3 text-[#D97706] shrink-0" />
-                          <span>Perlu Penguatan</span>
-                        </span>
-                      )}
-
-                      {/* Box Skor: Anchored on the right with uniform width, 100% sederet vertikal */}
-                      <div className="w-12 h-10 rounded-lg bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] flex flex-col items-center justify-center shrink-0">
-                        <span className="font-mono font-black text-xs text-[#0038D1] leading-none">
-                          {item.score}
-                        </span>
-                        <span className="text-[8px] font-mono font-bold text-[#71717A] uppercase leading-none mt-0.5">
-                          Skor
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    <span>Hasil Graf Terakhir</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
+
+              {completedCount === 0 ? (
+                <div className="py-12 text-center space-y-2 bg-[#FAF7F2] rounded-xl border border-[#1B1B1E]/20 p-4">
+                  <FileText className="w-8 h-8 text-[#71717A] mx-auto" />
+                  <p className="text-xs font-bold text-[#1B1B1E]">Belum Ada Riwayat Asesmen</p>
+                  <p className="text-[11px] text-[#71717A] max-w-sm mx-auto">
+                    Data pengumpulan Anda akan otomatis tersimpan ke database setelah menyelesaikan asesmen pertama.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-[#71717A] pb-1">
+                    <span>{completedCount} asesmen telah diselesaikan</span>
+                    <span className="font-mono font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#A7F3D0]">
+                      Rata-rata: {avgScore}%
+                    </span>
+                  </div>
+
+                  {submissions.map((sub, idx) => (
+                    <div
+                      key={idx}
+                      className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] flex items-center justify-between gap-3 shadow-[1.5px_1.5px_0px_#1B1B1E]"
+                    >
+                      <div className="space-y-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-1.5 py-0.2 rounded border text-[9px] font-mono font-bold bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]">
+                            {sub.assessment_id}
+                          </span>
+                          <h4 className="font-bold text-xs text-[#1B1B1E] truncate">
+                            {assessmentConfig.title}
+                          </h4>
+                        </div>
+                        <span className="text-[9.5px] font-mono text-[#71717A] block">
+                          Terkumpul &bull; {sub.evaluated_edges?.length || 0} Proposisi Dievaluasi
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="w-12 h-10 rounded-lg bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] flex flex-col items-center justify-center shrink-0">
+                          <span className="font-mono font-black text-xs text-[#0038D1] leading-none">
+                            {sub.total_score}
+                          </span>
+                          <span className="text-[8px] font-mono font-bold text-[#71717A] uppercase leading-none mt-0.5">
+                            Skor
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[11px] text-[#71717A]">
-              <span>Portofolio Semester Ganjil</span>
-              <span className="font-mono font-bold text-[#059669]">2 Modul Menuju Kelulusan 8/8</span>
+              <span>Portofolio Konseptual Real-Time</span>
+              <span className="font-mono font-bold text-[#0038D1]">Sinkron dengan Server</span>
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ export interface AssessmentConfig {
   description?: string;
   instructions?: string;
   master_map_id: string;
+  exam_token?: string;
   duration_minutes: number;
   time_limit_minutes?: number;
   allow_bidirectional_tolerance: boolean;
@@ -47,6 +48,9 @@ export interface AssessmentConfig {
     proposition_accuracy: number;
     topology: number;
   };
+  passing_grade?: number;
+  distractors?: string[];
+  distractor_nodes?: ConceptNode[];
 }
 
 export interface ConceptKit {
@@ -86,10 +90,22 @@ export interface EvaluationResult {
   strengths: string[];
 }
 
+export interface StudentSubmission {
+  assessment_id: string;
+  student_id: string;
+  student_name: string;
+  submitted_nodes: ConceptNode[];
+  submitted_edges: ConceptEdge[];
+  submitted_at?: string;
+  evaluation_result?: EvaluationResult;
+}
+
 export interface ClassKnowledgeGapSummary {
   assessment_id: string;
   total_students: number;
+  total_submissions?: number;
   average_score: number;
+  passing_rate?: number;
   score_distribution: {
     '<60': number;
     '60-69': number;
@@ -104,6 +120,8 @@ export interface ClassKnowledgeGapSummary {
     label: string;
     correct_percentage: number;
     error_percentage: number;
+    misconception_type?: string;
+    frequency?: number;
   }[];
   well_understood_relationships: {
     key: string;
@@ -113,6 +131,15 @@ export interface ClassKnowledgeGapSummary {
     correct_percentage: number;
     error_percentage: number;
   }[];
+  student_performances?: {
+    student_id: string;
+    student_name: string;
+    total_score: number;
+    status: string;
+    structural_score?: number;
+    accuracy_score?: number;
+    gaps_count?: number;
+  }[];
 }
 
 export interface AIDraftResponse {
@@ -121,4 +148,18 @@ export interface AIDraftResponse {
   edges: ConceptEdge[];
   confidence_score: number;
   generation_notes: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'student' | 'teacher';
+  identifier?: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
 }

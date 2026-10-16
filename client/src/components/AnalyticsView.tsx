@@ -1,23 +1,24 @@
 'use client';
 
 import React from 'react';
-import { ClassKnowledgeGapSummary } from '../types/maply';
+import { ClassKnowledgeGapSummary, User } from '../types/maply';
 import { Users, TrendingUp, AlertOctagon, CheckCircle2, Lightbulb, BarChart3 } from 'lucide-react';
 import { InstructorNavbar, InstructorNavItem } from './InstructorNavbar';
 
 interface AnalyticsViewProps {
   analytics: ClassKnowledgeGapSummary;
+  currentUser?: User | null;
   onNavigate: (item: InstructorNavItem) => void;
   onLogout: () => void;
 }
 
-export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavigate, onLogout }) => {
+export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, currentUser, onNavigate, onLogout }) => {
   const dist = analytics.score_distribution;
   const maxDist = Math.max(...Object.values(dist), 1);
 
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
-      <InstructorNavbar activeItem="Analytics" onNavigate={onNavigate} onLogout={onLogout} />
+      <InstructorNavbar activeItem="Analytics" currentUser={currentUser} onNavigate={onNavigate} onLogout={onLogout} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Ribbon Matching Figma #7:1718 */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#1B1B1E] pb-4">
@@ -26,7 +27,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavig
             <span className="px-2 py-0.5 rounded-full bg-[#E6F4EA] border border-[#1B1B1E] text-[10px] font-extrabold text-[#059669]">
               ● AGGREGATE CLASS REPORT
             </span>
-            <span className="text-xs font-bold text-[#444655]">FILKOM UB &bull; KELAS B</span>
+            <span className="text-xs font-bold text-[#444655]">FILKOM UNIVERSITAS BRAWIJAYA</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-serif font-black text-[#1B1B1E] mt-1">
             Analisis Pemahaman Konseptual Tingkat Kelas (Knowledge Gaps)
@@ -38,7 +39,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavig
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs font-black text-[#0038D1]">
-            94.8% Propositional Match
+            {analytics.total_students > 0 ? `${analytics.average_score}% Akurasi Konseptual` : 'Menunggu Pengumpulan'}
           </span>
         </div>
       </div>
@@ -140,19 +141,33 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavig
               <Lightbulb className="w-5 h-5 text-[#0038D1]" />
               <span>Rekomendasi Tindak Lanjut Dosen (Actionable Insights)</span>
             </div>
-            <p className="text-xs text-[#444655] leading-relaxed">
-              Berdasarkan perbandingan graf hasil rekonstruksi mahasiswa, sebagian besar kelas telah mengenali
-              seluruh komponen hardware CPU. Namun, <strong>lebih dari 50% mahasiswa gagal mengaitkan aliran data
-              antara ALU, Register, dan Memory utama</strong>.
-            </p>
-            <div className="p-3.5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-2 text-xs">
-              <span className="font-black text-[#1B1B1E] block">Langkah Remediasi Konsep yang Disarankan:</span>
-              <ul className="list-disc list-inside space-y-1 text-[#444655] text-[11px] font-medium">
-                <li>Simulasikan siklus fetch-decode-execute secara visual pada pertemuan berikutnya.</li>
-                <li>Tekankan peran Register sebagai buffer berkecepatan tinggi sebelum data dipindahkan ke RAM.</li>
-                <li>Lakukan post-test asesmen kit-build setelah sesi penjelasan ulang materi.</li>
-              </ul>
-            </div>
+            {analytics.total_students === 0 ? (
+              <p className="text-xs text-[#71717A] leading-relaxed py-4 text-center">
+                Belum ada data pengerjaan dari mahasiswa untuk modul ini. Analisis proposisi dan langkah remediasi otomatis dibuat begitu mahasiswa mengumpulkan tugas di kanvas.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-[#444655] leading-relaxed">
+                  Berdasarkan perbandingan graf hasil rekonstruksi mahasiswa, rata-rata skor konseptual kelas mencapai{' '}
+                  <strong>{analytics.average_score}%</strong>. Ditemukan{' '}
+                  <strong>{analytics.problematic_relationships.length} titik relasi kunci</strong> yang mengalami miskonsepsi atau belum terhubung secara akurat.
+                </p>
+                <div className="p-3.5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-2 text-xs">
+                  <span className="font-black text-[#1B1B1E] block">Langkah Remediasi Konsep yang Disarankan:</span>
+                  <ul className="list-disc list-inside space-y-1 text-[#444655] text-[11px] font-medium">
+                    {analytics.problematic_relationships.slice(0, 3).map((rel, i) => (
+                      <li key={i}>
+                        Koreksi pemahaman relasi antara <strong>[{rel.source}]</strong> dan <strong>[{rel.target}]</strong> ({rel.error_percentage}% kelas mengalami miskonsepsi).
+                      </li>
+                    ))}
+                    {analytics.problematic_relationships.length === 0 && (
+                      <li>Seluruh proposisi acuan dipahami dengan sangat baik oleh kelas.</li>
+                    )}
+                    <li>Gunakan visualisasi evaluasi graf komparatif sebagai bahan review perkuliahan.</li>
+                  </ul>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="pt-3 border-t-2 border-[#1B1B1E] flex items-center justify-between text-xs font-bold text-[#444655]">
@@ -171,30 +186,38 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavig
             <span>Top Knowledge Gaps (Paling Banyak Miskonsepsi / Hilang)</span>
           </div>
           <div className="space-y-2.5">
-            {analytics.problematic_relationships.map((rel, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-xl bg-[#FFF1F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-between text-xs"
-              >
-                <div>
-                  <div className="font-black text-[#1B1B1E] flex items-center gap-1.5 flex-wrap">
-                    <span>[{rel.source}]</span>
-                    <span className="text-[#DA3437] font-bold px-1.5 py-0.5 bg-white rounded-sm border border-[#DA3437] text-[10px]">
-                      ── {rel.label} ──▶
-                    </span>
-                    <span>[{rel.target}]</span>
-                  </div>
-                  <span className="text-[11px] text-[#444655] mt-1 block font-medium">
-                    {rel.correct_percentage}% Mahasiswa Tepat &bull; {rel.error_percentage}% Miskonsepsi
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-black text-[#DA3437] px-2.5 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]">
-                    {rel.error_percentage}% Gap
-                  </span>
-                </div>
+            {analytics.problematic_relationships.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-[#71717A] font-bold">
+                {analytics.total_students === 0
+                  ? "Belum ada data pengerjaan mahasiswa."
+                  : "Tidak ditemukan miskonsepsi signifikan (semua relasi dipahami dengan baik)."}
               </div>
-            ))}
+            ) : (
+              analytics.problematic_relationships.map((rel, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-[#FFF1F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <div className="font-black text-[#1B1B1E] flex items-center gap-1.5 flex-wrap">
+                      <span>[{rel.source}]</span>
+                      <span className="text-[#DA3437] font-bold px-1.5 py-0.5 bg-white rounded-sm border border-[#DA3437] text-[10px]">
+                        ── {rel.label} ──▶
+                      </span>
+                      <span>[{rel.target}]</span>
+                    </div>
+                    <span className="text-[11px] text-[#444655] mt-1 block font-medium">
+                      {rel.correct_percentage}% Mahasiswa Tepat &bull; {rel.error_percentage}% Miskonsepsi
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-[#DA3437] px-2.5 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]">
+                      {rel.error_percentage}% Gap
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -205,30 +228,38 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavig
             <span>Konsep yang Sangat Dipahami Kelas</span>
           </div>
           <div className="space-y-2.5">
-            {analytics.well_understood_relationships.map((rel, idx) => (
-              <div
-                key={idx}
-                className="p-3 rounded-xl bg-[#E6F4EA] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-between text-xs"
-              >
-                <div>
-                  <div className="font-black text-[#1B1B1E] flex items-center gap-1.5 flex-wrap">
-                    <span>[{rel.source}]</span>
-                    <span className="text-[#059669] font-bold px-1.5 py-0.5 bg-white rounded-sm border border-[#059669] text-[10px]">
-                      ── {rel.label} ──▶
-                    </span>
-                    <span>[{rel.target}]</span>
-                  </div>
-                  <span className="text-[11px] text-[#444655] mt-1 block font-medium">
-                    Dipahami oleh {rel.correct_percentage}% dari total mahasiswa
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-black text-[#059669] px-2.5 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]">
-                    {rel.correct_percentage}% Tepat
-                  </span>
-                </div>
+            {analytics.well_understood_relationships.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-xs text-[#71717A] font-bold">
+                {analytics.total_students === 0
+                  ? "Belum ada data pengerjaan mahasiswa."
+                  : "Belum ada relasi dengan tingkat pemahaman di atas 80%."}
               </div>
-            ))}
+            ) : (
+              analytics.well_understood_relationships.map((rel, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-[#E6F4EA] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-between text-xs"
+                >
+                  <div>
+                    <div className="font-black text-[#1B1B1E] flex items-center gap-1.5 flex-wrap">
+                      <span>[{rel.source}]</span>
+                      <span className="text-[#059669] font-bold px-1.5 py-0.5 bg-white rounded-sm border border-[#059669] text-[10px]">
+                        ── {rel.label} ──▶
+                      </span>
+                      <span>[{rel.target}]</span>
+                    </div>
+                    <span className="text-[11px] text-[#444655] mt-1 block font-medium">
+                      Dipahami oleh {rel.correct_percentage}% dari total mahasiswa
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-black text-[#059669] px-2.5 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]">
+                      {rel.correct_percentage}% Tepat
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

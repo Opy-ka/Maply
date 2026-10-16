@@ -111,6 +111,8 @@ export const CreateAssessmentWizard: React.FC<CreateAssessmentWizardProps> = ({
         id: `asm-${Date.now()}`,
         master_map_id: masterMap.id,
         title: moduleTitle,
+        description: selectedClass,
+        exam_token: examToken,
         instructions: studentInstructions,
         duration_minutes: durationMinutes,
         time_limit_minutes: durationMinutes,
@@ -244,21 +246,33 @@ export const CreateAssessmentWizard: React.FC<CreateAssessmentWizardProps> = ({
                   </span>
                 </div>
 
-                {/* Rombel Dropdown */}
+                {/* Course & Class Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-wider text-[#1B1B1E]">
-                    Pilih Mata Kuliah & Rombongan Belajar
-                  </label>
-                  <select
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-[#1B1B1E]">
+                      Mata Kuliah & Rombongan Belajar
+                    </label>
+                    <span className="text-[10px] font-mono text-[#71717A]">
+                      Bisa pilih template atau ketik nama matkul bebas
+                    </span>
+                  </div>
+                  <input
+                    type="text"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-sm font-bold text-[#1B1B1E] focus:outline-none focus:ring-2 focus:ring-[#0038D1]"
-                  >
-                    <option>Arsitektur & Organisasi Komputer - Kelas B (42 Mahasiswa)</option>
-                    <option>Arsitektur & Organisasi Komputer - Kelas A (38 Mahasiswa)</option>
-                    <option>Sistem Operasi - Kelas C (45 Mahasiswa)</option>
-                    <option>Basis Data Lanjut - Kelas D (36 Mahasiswa)</option>
-                  </select>
+                    placeholder="Contoh: Basis Data, Rekayasa Perangkat Lunak, Jaringan Komputer, dll."
+                    list="course-suggestions"
+                    className="w-full p-3 rounded-xl bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-sm font-bold text-[#1B1B1E] focus:outline-none focus:ring-2 focus:ring-[#0038D1]"
+                  />
+                  <datalist id="course-suggestions">
+                    <option value="Arsitektur & Organisasi Komputer - Kelas B" />
+                    <option value="Jaringan Komputer - Kelas A" />
+                    <option value="Sistem Operasi - Kelas C" />
+                    <option value="Basis Data & Pemodelan Relasional - Kelas D" />
+                    <option value="Algoritma & Struktur Data - Kelas E" />
+                    <option value="Rekayasa Perangkat Lunak - Kelas F" />
+                    <option value="Kecerdasan Buatan & Machine Learning" />
+                  </datalist>
                 </div>
 
                 {/* Modul Title */}

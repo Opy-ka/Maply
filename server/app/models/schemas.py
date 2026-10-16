@@ -29,7 +29,9 @@ class AssessmentConfig(BaseModel):
     id: str
     title: str
     description: Optional[str] = None
+    instructions: Optional[str] = None
     master_map_id: str
+    exam_token: Optional[str] = None
     duration_minutes: int = 30
     allow_bidirectional_tolerance: bool = True
     tolerated_symmetric_labels: List[str] = Field(
@@ -43,6 +45,16 @@ class AssessmentConfig(BaseModel):
             "structural_understanding": 0.30
         }
     )
+    passing_grade: Optional[float] = 75.0
+    distractors: Optional[List[str]] = Field(default_factory=list)
+
+class VerifyTokenRequest(BaseModel):
+    token: str
+
+class VerifyTokenResponse(BaseModel):
+    valid: bool
+    assessment: Optional[AssessmentConfig] = None
+    message: str
 
 class ConceptKit(BaseModel):
     assessment_id: str
@@ -78,6 +90,15 @@ class EvaluationResult(BaseModel):
     knowledge_gaps: List[str]
     strengths: List[str]
 
+class StudentPerformanceItem(BaseModel):
+    student_id: str
+    student_name: str
+    total_score: float
+    status: Optional[str] = "Lulus Standar"
+    structural_score: Optional[float] = 0.0
+    accuracy_score: Optional[float] = 0.0
+    gaps_count: Optional[int] = 0
+
 class ClassKnowledgeGapSummary(BaseModel):
     assessment_id: str
     total_students: int
@@ -85,6 +106,7 @@ class ClassKnowledgeGapSummary(BaseModel):
     score_distribution: Dict[str, int]
     problematic_relationships: List[Dict[str, Any]]
     well_understood_relationships: List[Dict[str, Any]]
+    student_performances: Optional[List[StudentPerformanceItem]] = Field(default_factory=list)
 
 class AIDraftRequest(BaseModel):
     topic: str
@@ -97,3 +119,26 @@ class AIDraftResponse(BaseModel):
     edges: List[ConceptEdge]
     confidence_score: float
     generation_notes: str
+
+class UserRegisterRequest(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    role: Optional[str] = "student"
+    identifier: Optional[str] = None
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    role: str
+    identifier: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

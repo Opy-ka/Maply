@@ -1,11 +1,23 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints.maply_api import router as maply_router
+from app.core.database import Base, engine, SessionLocal
+from app.api.v1.endpoints.maply_api import router as maply_router, seed_initial_database
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database tables
+    Base.metadata.create_all(bind=engine)
+    # Seed default master map and initial assessment if needed
+    with SessionLocal() as db:
+        seed_initial_database(db)
+    yield
 
 app = FastAPI(
     title="Maply API",
     description="Backend API & Deterministic Graph Assessment Engine for Maply",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS setup for frontend Next.js communication

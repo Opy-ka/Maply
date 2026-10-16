@@ -22,12 +22,15 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { AssessmentConfig, MasterConceptMap } from '../types/maply';
+import { AssessmentConfig, ClassKnowledgeGapSummary, MasterConceptMap, User } from '../types/maply';
 import { InstructorNavbar, InstructorNavItem } from './InstructorNavbar';
 
 interface TeacherAssessmentsViewProps {
   assessmentConfig: AssessmentConfig;
   masterMap: MasterConceptMap;
+  assessments?: AssessmentConfig[];
+  analytics?: ClassKnowledgeGapSummary;
+  currentUser?: User | null;
   onNavigate: (item: InstructorNavItem) => void;
   onCreateAssessment: () => void;
   onSaveAssessment: (config: AssessmentConfig) => Promise<void>;
@@ -35,56 +38,6 @@ interface TeacherAssessmentsViewProps {
 }
 
 type AssessmentStatus = 'Published (Aktif)' | 'Scheduled' | 'Selesai & Dievaluasi';
-
-const ASSESSMENTS: {
-  id: string;
-  title: string;
-  detail: string;
-  course: string;
-  className: string;
-  participation: number;
-  status: AssessmentStatus;
-  deadline: string;
-  score: number;
-  note: string;
-}[] = [
-  {
-    id: 'asm-01',
-    title: 'Alur Pemrosesan CPU & Hirarki Memori',
-    detail: 'Kit-Build • 14 Nodes • 2 Distraktor',
-    course: 'Arsitektur Komputer',
-    className: 'Rombel A & B',
-    participation: 90,
-    status: 'Published (Aktif)',
-    deadline: 'Hari ini 23:59 WIB',
-    score: 82.4,
-    note: '85% Lulus OBE',
-  },
-  {
-    id: 'asm-02',
-    title: 'Dekomposisi Normalisasi 1NF–BCNF',
-    detail: 'Kit-Build • 18 Nodes • 3 Distraktor',
-    course: 'Basis Data Lanjut',
-    className: 'Rombel D',
-    participation: 64,
-    status: 'Scheduled',
-    deadline: 'Mulai 20 Okt 2026',
-    score: 0,
-    note: 'Belum dimulai',
-  },
-  {
-    id: 'asm-03',
-    title: 'Virtual Memory Paging & TLB',
-    detail: 'Kit-Build • 11 Nodes • 1 Distraktor',
-    course: 'Sistem Operasi',
-    className: 'Rombel C',
-    participation: 100,
-    status: 'Selesai & Dievaluasi',
-    deadline: 'Selesai 12 Okt 2026',
-    score: 88.2,
-    note: 'Nilai Rombel Tertinggi',
-  },
-];
 
 const statusClasses: Record<AssessmentStatus, string> = {
   'Published (Aktif)': 'bg-[#e6f4ea] text-[#0038d1]',
@@ -150,6 +103,9 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
   assessmentConfig,
   masterMap,
+  assessments = [],
+  analytics,
+  currentUser,
   onNavigate,
   onCreateAssessment,
   onSaveAssessment,
@@ -166,9 +122,47 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState('');
 
+  const assessmentItems = useMemo(() => {
+    const list = assessments && assessments.length > 0 ? assessments : [assessmentConfig];
+    return list.map((a) => {
+      const desc = a.description || '';
+      let courseName = masterMap.title || 'Arsitektur Komputer';
+      let className = desc || 'Rombel A & B';
+      if (desc.includes('Kelas') || desc.includes('Rombel')) {
+        const parts = desc.split(/[-–(]/);
+        if (parts[0]?.trim()) courseName = parts[0].trim();
+      } else if (a.title.toLowerCase().includes('sistem operasi')) {
+        courseName = 'Sistem Operasi';
+      } else if (a.title.toLowerCase().includes('basis data')) {
+        courseName = 'Basis Data';
+      } else if (a.title.toLowerCase().includes('jaringan')) {
+        courseName = 'Jaringan Komputer';
+      }
+
+      const isPublished = Boolean(a.exam_token);
+      const totalStudents = analytics?.total_students || 0;
+      const totalSubmissions = analytics?.total_submissions || totalStudents;
+      const partPct = totalStudents > 0 ? Math.round((totalSubmissions / totalStudents) * 100) : (isPublished ? 100 : 0);
+      const avgScore = analytics?.total_students ? Number(analytics.average_score) : (a.passing_grade || 75.0);
+
+      return {
+        id: a.id,
+        title: a.title,
+        detail: `Kit-Build • ${a.duration_minutes || 30} Menit • Token: ${a.exam_token || 'Belum Terbit'}`,
+        course: courseName,
+        className: className,
+        participation: isPublished ? partPct : 0,
+        status: (isPublished ? 'Published (Aktif)' : 'Scheduled') as AssessmentStatus,
+        deadline: 'Sesi Aktif',
+        score: avgScore,
+        note: isPublished ? `Token: ${a.exam_token}` : 'Draf Asesmen'
+      };
+    });
+  }, [assessments, assessmentConfig, masterMap.title, analytics]);
+
   const filteredAssessments = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
-    return ASSESSMENTS.filter((assessment) => {
+    return assessmentItems.filter((assessment) => {
       const matchesQuery =
         !query ||
         `${assessment.title} ${assessment.course} ${assessment.className}`
@@ -181,7 +175,7 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
         (statusFilter === 'Selesai' && assessment.status === 'Selesai & Dievaluasi');
       return matchesQuery && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [search, statusFilter, assessmentItems]);
 
   const saveParameters = async () => {
     setIsSaving(true);
@@ -206,7 +200,7 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1b1b1e]">
-      <InstructorNavbar activeItem="Assessments" onNavigate={onNavigate} onLogout={onLogout} />
+      <InstructorNavbar activeItem="Assessments" currentUser={currentUser} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
         <section className="relative flex flex-col items-start justify-between gap-5 overflow-hidden rounded-2xl bg-white p-5 shadow-[4px_4px_0_#1b1b1e] sm:p-7 lg:flex-row lg:items-center">
@@ -263,34 +257,60 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
         <section aria-label="Ringkasan status asesmen" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Total asesmen aktif" icon={FileText} iconTone="blue">
             <div className="flex items-baseline gap-2">
-              <strong className="font-serif text-4xl">3</strong>
-              <span className="text-[10px] text-[#747687]">/ 8 Target RPS</span>
+              <strong className="font-serif text-4xl">{assessmentItems.length}</strong>
+              <span className="text-[10px] text-[#747687]">/ {assessments.length || 1} Terdaftar</span>
             </div>
             <span className="inline-flex items-center gap-2 text-[10px] text-[#444655]">
-              <span className="h-2 w-2 rounded-full bg-[#0038d1]" />1 berlangsung hari ini
+              <span className="h-2 w-2 rounded-full bg-[#0038d1]" />
+              {assessmentItems.filter((a) => a.status === 'Published (Aktif)').length || 1} berlangsung aktif
             </span>
           </MetricCard>
           <MetricCard label="Tingkat penyerahan" icon={Users} iconTone="gray">
             <div className="flex items-baseline gap-2">
-              <strong className="font-serif text-4xl">90.4%</strong>
-              <span className="text-[10px] text-[#747687]">(38/42 mhs)</span>
+              <strong className="font-serif text-4xl">
+                {analytics?.total_students
+                  ? `${Math.round(((analytics.total_submissions || analytics.total_students) / analytics.total_students) * 100)}%`
+                  : '100%'}
+              </strong>
+              <span className="text-[10px] text-[#747687]">
+                ({analytics?.total_submissions || analytics?.total_students || 0}/{analytics?.total_students || 0} mhs)
+              </span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#f0edf1]">
-              <div className="h-full w-[90.4%] rounded-full bg-[#0038d1]" />
+              <div
+                className="h-full rounded-full bg-[#0038d1] transition-all"
+                style={{
+                  width: analytics?.total_students
+                    ? `${Math.min(100, Math.round(((analytics.total_submissions || analytics.total_students) / analytics.total_students) * 100))}%`
+                    : '100%'
+                }}
+              />
             </div>
           </MetricCard>
           <MetricCard label="Rerata proposition accuracy" icon={Gauge} iconTone="amber">
             <div className="flex items-baseline gap-2">
-              <strong className="font-serif text-4xl">82.6</strong>
+              <strong className="font-serif text-4xl">
+                {analytics?.total_students ? Number(analytics.average_score).toFixed(1) : '0.0'}
+              </strong>
               <span className="text-[10px] text-[#747687]">/ 100</span>
             </div>
             <span className="inline-flex items-center gap-2 text-[10px] font-bold text-[#0038d1]">
-              <ArrowUpRight className="h-3 w-3" />+6.1% vs Quiz Konvensional
+              <ArrowUpRight className="h-3 w-3" />
+              {analytics?.total_students ? 'Deterministik Graf OBE' : 'Menunggu Pengerjaan'}
             </span>
           </MetricCard>
           <MetricCard label="Miskonsepsi terdeteksi" icon={AlertTriangle} iconTone="red">
-            <strong className="font-serif text-4xl text-[#b61722]">14 Kasus</strong>
-            <span className="text-[10px] leading-4 text-[#444655]">Tinggi: ALU ↔ Cache L1 Link</span>
+            <strong className="font-serif text-4xl text-[#b61722]">
+              {analytics?.problematic_relationships?.length || 0} Kasus
+            </strong>
+            <span
+              className="text-[10px] leading-4 text-[#444655] truncate"
+              title={analytics?.problematic_relationships?.[0] ? `${analytics.problematic_relationships[0].source} ↔ ${analytics.problematic_relationships[0].target}` : ''}
+            >
+              {analytics?.problematic_relationships?.[0]
+                ? `Tinggi: ${analytics.problematic_relationships[0].source} ↔ ${analytics.problematic_relationships[0].target}`
+                : 'Tidak ada miskonsepsi signifikan'}
+            </span>
           </MetricCard>
         </section>
 
@@ -318,7 +338,7 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
                 <div>
                   <FieldLabel>Mata kuliah &amp; rombel</FieldLabel>
                   <div className="mt-1 flex items-center justify-between gap-2 rounded-lg bg-[#f6f2f7] px-3 py-2 text-xs">
-                    <span>Arsitektur Komputer (TIF-2101) - Rombel A &amp; B</span>
+                    <span>{assessmentConfig.description || `${masterMap.title} - Rombel A & B`}</span>
                     <ChevronDown className="h-4 w-4 shrink-0 text-[#747687]" />
                   </div>
                 </div>
@@ -372,8 +392,8 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
                 <div>
                   <FieldLabel>Jadwal rilis &amp; tenggat (WIB)</FieldLabel>
                   <div className="mt-1 space-y-2 rounded-lg bg-[#f6f2f7] p-3 text-xs">
-                    <div className="flex justify-between gap-3"><span className="text-[#747687]">Buka (Mulai)</span><strong>20 Okt 2026, 08:00 WIB</strong></div>
-                    <div className="flex justify-between gap-3"><span className="text-[#747687]">Tenggat (Deadline)</span><strong className="text-[#b61722]">24 Okt 2026, 23:59 WIB</strong></div>
+                    <div className="flex justify-between gap-3"><span className="text-[#747687]">Buka (Mulai)</span><strong>Sesi Aktif (Live)</strong></div>
+                    <div className="flex justify-between gap-3"><span className="text-[#747687]">Tenggat (Deadline)</span><strong className="text-[#b61722]">Hari ini 23:59 WIB</strong></div>
                   </div>
                 </div>
                 <div className="rounded-lg bg-[#f6f2f7] p-3">
@@ -410,8 +430,17 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
                 <div>
                   <FieldLabel>Kartu distraktor (jebakan miskonsepsi)</FieldLabel>
                   <div className="mt-1 flex flex-wrap gap-2">
-                    <span className="rounded-md bg-[#f6f2f7] px-2.5 py-1.5 text-[10px]">GPU Shader Core</span>
-                    <span className="rounded-md bg-[#f6f2f7] px-2.5 py-1.5 text-[10px]">Secondary Storage (HDD)</span>
+                    {((assessmentConfig.distractor_nodes && assessmentConfig.distractor_nodes.length > 0) || (assessmentConfig.distractors && assessmentConfig.distractors.length > 0)) ? (
+                      (assessmentConfig.distractor_nodes || (assessmentConfig.distractors || []).map((d, i) => ({ id: `dist-${i}`, label: d }))).map((distractor) => (
+                        <span key={distractor.id} className="rounded-md bg-[#ffe4e6] border border-[#f43f5e] text-[#be123c] px-2.5 py-1.5 text-[10px] font-bold">
+                          {distractor.label}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="rounded-md bg-[#f6f2f7] px-2.5 py-1.5 text-[10px] text-[#747687]">
+                        Tidak ada kartu distraktor aktif
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="rounded-lg bg-[#f6f2f7] p-3">
@@ -570,7 +599,7 @@ export const TeacherAssessmentsView: React.FC<TeacherAssessmentsViewProps> = ({
             </table>
           </div>
           <div className="mt-4 flex flex-col justify-between gap-3 border-t border-[#f0edf1] pt-4 text-[10px] text-[#444655] sm:flex-row sm:items-center">
-            <span>Menampilkan {filteredAssessments.length} dari 3 asesmen terdaftar</span>
+            <span>Menampilkan {filteredAssessments.length} dari {assessmentItems.length} asesmen terdaftar</span>
             <div className="flex items-center gap-1">
               <button type="button" disabled className="rounded bg-[#f6f2f7] px-3 py-1.5 opacity-50">Sebelumnya</button>
               <span className="rounded bg-[#0038d1] px-3 py-1.5 font-bold text-white">1</span>

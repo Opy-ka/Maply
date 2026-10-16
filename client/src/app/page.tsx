@@ -16,23 +16,43 @@ import { AnalyticsView } from '../components/AnalyticsView';
 import { EvaluationModal } from '../components/EvaluationModal';
 import { AuthModal } from '../components/AuthModal';
 import { CreateAssessmentWizard } from '../components/CreateAssessmentWizard';
+import { WorkspacePickerView } from '../components/WorkspacePickerView';
 import {
   checkBackendHealth,
+  fetchAssessmentsList,
+  verifyExamToken,
   fetchMasterMap,
   fetchAssessment,
   fetchAssessmentKit,
   fetchClassAnalytics,
+  fetchCurrentUser,
+  fetchMySubmissions,
+  getStoredUser,
+  clearStoredToken,
   saveMasterMap,
   updateAssessment,
   INITIAL_MASTER_MAP,
   INITIAL_ASSESSMENT
 } from '../lib/api';
-import { MasterConceptMap, AssessmentConfig, ConceptKit, EvaluationResult, ClassKnowledgeGapSummary } from '../types/maply';
+import {
+  MasterConceptMap,
+  AssessmentConfig,
+  ConceptKit,
+  EvaluationResult,
+  ClassKnowledgeGapSummary,
+  User,
+  StudentSubmission
+} from '../types/maply';
 
 export default function Home() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [mySubmissions, setMySubmissions] = useState<EvaluationResult[]>([]);
   const [currentTab, setCurrentTab] = useState<ActiveTab>('onboarding');
   const [masterMap, setMasterMap] = useState<MasterConceptMap>(INITIAL_MASTER_MAP);
   const [assessmentConfig, setAssessmentConfig] = useState<AssessmentConfig>(INITIAL_ASSESSMENT);
+  const [assessments, setAssessments] = useState<AssessmentConfig[]>([]);
+  const [workspaceAsmId, setWorkspaceAsmId] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState<Record<string, number>>({});
   const [kit, setKit] = useState<ConceptKit | null>(null);
   const [kitVersion, setKitVersion] = useState(0);
   const [mapVersion, setMapVersion] = useState(0);
@@ -63,6 +83,13 @@ export default function Home() {
   // Restore active user session on mount
   useEffect(() => {
     try {
+      const stored = getStoredUser();
+      if (stored) {
+        setCurrentUser(stored);
+        if (stored.role === 'student') {
+          fetchMySubmissions(stored.id).then(setMySubmissions).catch(() => {});
+        }
+      }
       const savedSession = localStorage.getItem('maply_active_session_v1');
       if (savedSession) {
         const parsed = JSON.parse(savedSession);
@@ -119,22 +146,115 @@ export default function Home() {
     setIsAuthModalOpen(true);
   };
 
-  const handleEnterExamWithToken = (token: string) => {
-    setActiveExamToken(token);
+  const startedKey = (userId?: string) => `maply_started_${userId || 'anon'}`;
+
+  const loadStartedMarkers = (userId?: string): Record<string, number> => {
+    try {
+      return JSON.parse(localStorage.getItem(startedKey(userId)) || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const saveStartedMarkers = (userId: string | undefined, map: Record<string, number>) => {
+    setStartedAt(map);
+    try {
+      localStorage.setItem(startedKey(userId), JSON.stringify(map));
+    } catch {}
+  };
+
+  /** Opens the canvas for a specific assessment (new start or resume). */
+  const openWorkspace = async (asmId: string) => {
+    if (mySubmissions.some((s) => s.assessment_id === asmId)) {
+      showToast('Asesmen ini sudah Anda kumpulkan dan tidak bisa dikerjakan ulang.');
+      return;
+    }
+    const target = assessments.find((a) => a.id === asmId) || (assessmentConfig.id === asmId ? assessmentConfig : null);
+    if (!target) {
+      showToast('Asesmen tidak ditemukan.');
+      return;
+    }
+    setAssessmentConfig(target);
+    await refreshKitAndAnalytics(target.id);
+
+    const markers = loadStartedMarkers(currentUser?.id);
+    const durationSec = (target.duration_minutes || target.time_limit_minutes || 30) * 60;
+    if (markers[target.id]) {
+      const elapsed = Math.floor((Date.now() - markers[target.id]) / 1000);
+      setExamTimeRemaining(Math.max(0, durationSec - elapsed));
+    } else {
+      markers[target.id] = Date.now();
+      saveStartedMarkers(currentUser?.id, markers);
+      setExamTimeRemaining(durationSec);
+    }
+
+    setWorkspaceAsmId(target.id);
     setCurrentTab('student');
     setStudentSubView('workspace');
-    setExamTimeRemaining((assessmentConfig.time_limit_minutes || 45) * 60);
+  };
+
+  const handleEnterExamWithToken = async (token: string) => {
+    const res = await verifyExamToken(token);
+    if (!res.valid || !res.assessment) {
+      showToast(`⚠️ ${res.message}`);
+      return;
+    }
+    setActiveExamToken(token);
+    setAssessments((prev) => (prev.some((a) => a.id === res.assessment!.id) ? prev : [...prev, res.assessment!]));
+    if (mySubmissions.some((s) => s.assessment_id === res.assessment!.id)) {
+      showToast('Asesmen ini sudah Anda kumpulkan.');
+      return;
+    }
+    setAssessmentConfig(res.assessment);
+    await refreshKitAndAnalytics(res.assessment.id);
+    const markers = loadStartedMarkers(currentUser?.id);
+    const durationSec = (res.assessment.duration_minutes || res.assessment.time_limit_minutes || 30) * 60;
+    if (!markers[res.assessment.id]) {
+      markers[res.assessment.id] = Date.now();
+      saveStartedMarkers(currentUser?.id, markers);
+      setExamTimeRemaining(durationSec);
+    } else {
+      const elapsed = Math.floor((Date.now() - markers[res.assessment.id]) / 1000);
+      setExamTimeRemaining(Math.max(0, durationSec - elapsed));
+    }
+    setWorkspaceAsmId(res.assessment.id);
+    setCurrentTab('student');
+    setStudentSubView('workspace');
     showToast(`✓ Memulai sesi pengerjaan Kit Map dengan Token ${token}!`);
   };
 
-  const handleLoginSuccess = (role: 'student' | 'teacher', userName: string) => {
+  /** Workspace tab click: go straight in if exactly one pending assessment, else show the picker. */
+  const handleStudentSubViewChange = (sub: 'dashboard' | 'assessments' | 'workspace' | 'evaluation') => {
+    if (sub === 'evaluation') setInspectedAssessmentId(null);
+    if (sub === 'workspace') {
+      const submittedIds = new Set(mySubmissions.map((s) => s.assessment_id));
+      const pending = assessments.filter((a) => !submittedIds.has(a.id));
+      if (pending.length === 1 && assessments.length === 1) {
+        void openWorkspace(pending[0].id);
+        return;
+      }
+      setWorkspaceAsmId(null);
+    }
+    setStudentSubView(sub);
+  };
+
+  const handleLoginSuccess = (role: 'student' | 'teacher', userName: string, user?: User) => {
+    const active = user || getStoredUser();
+    if (active) {
+      setCurrentUser(active);
+      if (active.role === 'student') {
+        fetchMySubmissions(active.id).then(setMySubmissions).catch(() => {});
+        setStartedAt(loadStartedMarkers(active.id));
+        fetchAssessmentsList().then(setAssessments).catch(() => {});
+      }
+    }
     setCurrentTab(role === 'student' ? 'student' : 'teacher');
     if (role === 'student') {
       setStudentSubView('dashboard');
     } else {
       setTeacherSubView('dashboard');
     }
-    showToast(`✓ Berhasil masuk ke Portal Mahasiswa sebagai ${userName}`);
+    showToast(`✓ Berhasil masuk ke Portal ${role === 'student' ? 'Mahasiswa' : 'Dosen'} sebagai ${active?.full_name || userName}`);
   };
 
   const handleAssessmentPublished = (token: string, newConfig: AssessmentConfig) => {
@@ -144,12 +264,18 @@ export default function Home() {
   };
 
   const handleLogout = () => {
+    clearStoredToken();
+    setCurrentUser(null);
+    setMySubmissions([]);
+    setEvaluationResult(null);
     setCurrentTab('onboarding');
     setStudentSubView('dashboard');
     setTeacherSubView('dashboard');
     setOpenAiDraftOnEditor(false);
     setActiveExamToken(null);
     setInspectedAssessmentId(null);
+    setWorkspaceAsmId(null);
+    setStartedAt({});
     setExamTimeRemaining(2700);
     try {
       localStorage.removeItem('maply_active_session_v1');
@@ -173,10 +299,27 @@ export default function Home() {
         const online = await checkBackendHealth();
         setBackendOnline(online);
 
+        const stored = getStoredUser();
+        if (stored) {
+          setCurrentUser(stored);
+          fetchCurrentUser().then((fresh) => {
+            if (fresh) setCurrentUser(fresh);
+          }).catch(() => {});
+          if (stored.role === 'student') {
+            fetchMySubmissions(stored.id).then(setMySubmissions).catch(() => {});
+          }
+        }
+
         const asm = await fetchAssessment(INITIAL_ASSESSMENT.id);
         const mapData = await fetchMasterMap(asm.master_map_id);
         setAssessmentConfig(asm);
         setMasterMap(mapData);
+        if (online) {
+          fetchAssessmentsList().then(setAssessments).catch(() => {});
+        }
+        if (stored) {
+          setStartedAt(loadStartedMarkers(stored.id));
+        }
         await refreshKitAndAnalytics(asm.id);
       } catch (err) {
         console.error('Failed to load initial data:', err);
@@ -218,95 +361,24 @@ export default function Home() {
   };
 
   const handleEvaluationComplete = async (res: EvaluationResult) => {
+    const markers = loadStartedMarkers(currentUser?.id);
+    delete markers[assessmentConfig.id];
+    saveStartedMarkers(currentUser?.id, markers);
+    setWorkspaceAsmId(null);
     setEvaluationResult(res);
     setInspectedAssessmentId(assessmentConfig.id);
     setStudentSubView('evaluation');
     if (backendOnline) {
-      setAnalytics(await fetchClassAnalytics(assessmentConfig.id));
+      const [analyticsData, freshSubs] = await Promise.all([
+        fetchClassAnalytics(assessmentConfig.id),
+        currentUser ? fetchMySubmissions(currentUser.id) : Promise.resolve([])
+      ]);
+      setAnalytics(analyticsData);
+      if (freshSubs && freshSubs.length > 0) {
+        setMySubmissions(freshSubs);
+      }
     }
     showToast(`✓ Evaluasi graf selesai: Skor ${res.total_score}/100`);
-  };
-
-  const sampleEvaluationResult: EvaluationResult = {
-    student_id: 'std-215150201111001',
-    student_name: 'M. Fadhil',
-    assessment_id: assessmentConfig.id,
-    concept_recognition_score: 100,
-    relationship_accuracy_score: 83.3,
-    structural_understanding_score: 80.5,
-    total_score: 86,
-    metrics: {
-      true_positive: 5,
-      false_positive: 1,
-      false_negative: 1,
-      precision: 0.83,
-      recall: 0.83,
-      f1_score: 0.83
-    },
-    knowledge_gaps: [
-      'Mahasiswa memahami komponen CPU dan Cache, tetapi belum mengaitkan relasi langsung antara ALU dengan Register secara presisi.',
-      'Perlu penguatan pada siklus transfer data bus internal antara Register dan Unit Kontrol.'
-    ],
-    strengths: [
-      'Presensi seluruh simpul konsep utama acuan mencapai 100%',
-      'Struktur koneksi hierarki terarah CPU, Control Unit, dan ALU tervalidasi presisi'
-    ],
-    evaluated_edges: [
-      {
-        source: 'cpu',
-        target: 'alu',
-        label: 'contains',
-        status: 'correct',
-        source_label: 'CPU',
-        target_label: 'ALU',
-        note: 'Sesuai dengan Master Ground Truth'
-      },
-      {
-        source: 'cpu',
-        target: 'cu',
-        label: 'contains',
-        status: 'correct',
-        source_label: 'CPU',
-        target_label: 'Control Unit',
-        note: 'Sesuai dengan Master Ground Truth'
-      },
-      {
-        source: 'cpu',
-        target: 'register',
-        label: 'contains',
-        status: 'correct',
-        source_label: 'CPU',
-        target_label: 'Register',
-        note: 'Sesuai dengan Master Ground Truth'
-      },
-      {
-        source: 'cpu',
-        target: 'cache',
-        label: 'interacts with',
-        status: 'correct',
-        source_label: 'CPU',
-        target_label: 'Cache Memory',
-        note: 'Sesuai dengan Master Ground Truth'
-      },
-      {
-        source: 'alu',
-        target: 'register',
-        label: 'transfers data to',
-        status: 'missing',
-        source_label: 'ALU',
-        target_label: 'Register',
-        note: 'Relasi kunci yang belum terhubung di kanvas'
-      },
-      {
-        source: 'alu',
-        target: 'cache',
-        label: 'controls',
-        status: 'incorrect',
-        source_label: 'ALU',
-        target_label: 'Cache Memory',
-        note: 'Miskonsepsi: ALU tidak mengontrol Cache (tugas Control Unit)'
-      }
-    ]
   };
 
   if (isLoading || !kit || !analytics) {
@@ -336,14 +408,10 @@ export default function Home() {
             }
           }}
           studentSubView={studentSubView}
-          onStudentSubViewChange={(sub) => {
-            if (sub === 'evaluation') {
-              setInspectedAssessmentId(null);
-            }
-            setStudentSubView(sub);
-          }}
-          studentName="Ahmad Rizky"
-          studentNim="225150201111048"
+          onStudentSubViewChange={handleStudentSubViewChange}
+          currentUser={currentUser}
+          studentName={currentUser?.full_name}
+          studentNim={currentUser?.identifier}
           onLogout={handleLogout}
           backendOnline={backendOnline}
           onOpenAuthModal={handleOpenAuth}
@@ -372,11 +440,19 @@ export default function Home() {
               <StudentDashboardView
                 assessmentConfig={assessmentConfig}
                 kit={kit}
-                onStartWorkspace={() => setStudentSubView('workspace')}
+                studentName={currentUser?.full_name}
+                studentNim={currentUser?.identifier}
+                submissions={mySubmissions}
+                onStartWorkspace={() => void openWorkspace(assessmentConfig.id)}
                 onEnterToken={(tok) => handleEnterExamWithToken(tok)}
                 onViewResults={() => {
-                  if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
-                  setInspectedAssessmentId('asm-cpu-06');
+                  if (mySubmissions.length > 0) {
+                    const latest = mySubmissions[0];
+                    setEvaluationResult(latest);
+                    setInspectedAssessmentId(latest.assessment_id);
+                  } else {
+                    setInspectedAssessmentId(null);
+                  }
                   setStudentSubView('evaluation');
                 }}
               />
@@ -384,48 +460,73 @@ export default function Home() {
 
             {studentSubView === 'assessments' && (
               <StudentAssessmentsView
+                assessments={assessments.length > 0 ? assessments : [assessmentConfig]}
                 assessmentConfig={assessmentConfig}
                 kit={kit}
-                onStartWorkspace={() => setStudentSubView('workspace')}
-                onViewResults={() => {
-                  if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
-                  setInspectedAssessmentId('asm-cpu-06');
+                submissions={mySubmissions}
+                onStartWorkspace={(asmId) => void openWorkspace(asmId)}
+                onViewResults={(asmId) => {
+                  const found = mySubmissions.find((s) => s.assessment_id === asmId);
+                  if (found) {
+                    setEvaluationResult(found);
+                  }
+                  setInspectedAssessmentId(asmId);
                   setStudentSubView('evaluation');
                 }}
               />
             )}
 
-            {studentSubView === 'workspace' && (
+            {studentSubView === 'workspace' && !workspaceAsmId && (
+              <WorkspacePickerView
+                assessments={assessments.length > 0 ? assessments : [assessmentConfig]}
+                submissions={mySubmissions}
+                startedAt={startedAt}
+                onOpen={(id) => void openWorkspace(id)}
+                onViewResult={(id) => {
+                  const found = mySubmissions.find((s) => s.assessment_id === id);
+                  if (found) setEvaluationResult(found);
+                  setInspectedAssessmentId(id);
+                  setStudentSubView('evaluation');
+                }}
+              />
+            )}
+
+            {studentSubView === 'workspace' && workspaceAsmId && (
               <StudentView
                 key={`kit-${kitVersion}`}
                 kit={kit}
                 assessmentConfig={assessmentConfig}
                 timeRemainingSeconds={examTimeRemaining}
-                studentName="Ahmad Rizky"
-                studentNim="225150201111048"
+                studentName={currentUser?.full_name}
+                studentNim={currentUser?.identifier}
                 onEvaluationComplete={handleEvaluationComplete}
                 onBackToDashboard={() => setStudentSubView('dashboard')}
               />
             )}
 
             {studentSubView === 'evaluation' && (
-              inspectedAssessmentId ? (
+              inspectedAssessmentId && evaluationResult ? (
                 <StudentEvaluationView
-                  result={evaluationResult || sampleEvaluationResult}
+                  result={evaluationResult}
                   assessmentConfig={assessmentConfig}
                   onBackToDashboard={() => setInspectedAssessmentId(null)}
                   onRetakeWorkspace={() => {
                     setInspectedAssessmentId(null);
+                    setWorkspaceAsmId(null);
                     setStudentSubView('workspace');
                   }}
                 />
               ) : (
                 <StudentPersonalResultsView
-                  studentName="Ahmad Rizky"
-                  studentNim="225150201111048"
+                  studentName={currentUser?.full_name}
+                  studentNim={currentUser?.identifier}
+                  submissions={mySubmissions}
                   onBackToDashboard={() => setStudentSubView('dashboard')}
                   onInspectAssessment={(asmId) => {
-                    if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                    const found = mySubmissions.find((s) => s.assessment_id === asmId);
+                    if (found) {
+                      setEvaluationResult(found);
+                    }
                     setInspectedAssessmentId(asmId);
                   }}
                 />
@@ -438,7 +539,9 @@ export default function Home() {
           <TeacherDashboardView
             masterMap={masterMap}
             assessmentConfig={assessmentConfig}
+            assessments={assessments.length > 0 ? assessments : [assessmentConfig]}
             analytics={analytics}
+            currentUser={currentUser}
             onOpenMap={() => {
               setOpenAiDraftOnEditor(false);
               setTeacherSubView('map');
@@ -457,6 +560,10 @@ export default function Home() {
 
         {currentTab === 'teacher' && teacherSubView === 'courses' && (
           <TeacherCoursesView
+            assessments={assessments.length > 0 ? assessments : [assessmentConfig]}
+            masterMap={masterMap}
+            analytics={analytics || undefined}
+            currentUser={currentUser}
             onNavigate={(item) => {
               if (item === 'Dashboard') {
                 setTeacherSubView('dashboard');
@@ -477,8 +584,11 @@ export default function Home() {
 
         {currentTab === 'teacher' && teacherSubView === 'assessments' && (
           <TeacherAssessmentsView
+            assessments={assessments.length > 0 ? assessments : [assessmentConfig]}
             assessmentConfig={assessmentConfig}
             masterMap={masterMap}
+            analytics={analytics || undefined}
+            currentUser={currentUser}
             onNavigate={(item) => {
               if (item === 'Dashboard') {
                 setTeacherSubView('dashboard');
@@ -505,6 +615,7 @@ export default function Home() {
             masterMap={masterMap}
             assessmentConfig={assessmentConfig}
             backendOnline={backendOnline}
+            currentUser={currentUser}
             onSaveMasterMap={handleSaveMasterMap}
             onSaveAssessment={handleSaveAssessment}
             initiallyOpenAIDraft={teacherSubView === 'premiumMap' || openAiDraftOnEditor}
@@ -523,6 +634,7 @@ export default function Home() {
         {currentTab === 'analytics' && (
           <AnalyticsView
             analytics={analytics}
+            currentUser={currentUser}
             onNavigate={(item) => {
               if (item === 'Dashboard') {
                 setCurrentTab('teacher');

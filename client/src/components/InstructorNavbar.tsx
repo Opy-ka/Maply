@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
+import { getStoredUser } from '../lib/api';
+import { User } from '../types/maply';
 
 export type InstructorNavItem = 'Dashboard' | 'Courses' | 'Maps' | 'Assessments' | 'Analytics';
 
-interface InstructorNavbarProps {
+export interface InstructorNavbarProps {
   activeItem: InstructorNavItem;
+  currentUser?: { full_name?: string; identifier?: string; email?: string } | null;
   onNavigate: (item: InstructorNavItem) => void;
   onLogout: () => void;
 }
@@ -28,12 +31,27 @@ const COURSE_OPTIONS = [
 
 export const InstructorNavbar: React.FC<InstructorNavbarProps> = ({
   activeItem,
+  currentUser,
   onNavigate,
   onLogout
 }) => {
   const [selectedCourse, setSelectedCourse] = useState(COURSE_OPTIONS[0]);
   const [isCourseMenuOpen, setIsCourseMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [localUser, setLocalUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLocalUser(getStoredUser());
+    }
+  }, [currentUser]);
+
+  const activeUser = currentUser || localUser;
+  const teacherName = activeUser?.full_name || 'Dosen Pengampu';
+  const teacherNip = activeUser?.identifier ? `NIP: ${activeUser.identifier}` : (activeUser?.email || '');
+  const initials = teacherName
+    ? teacherName.split(' ').filter((p: string) => !p.includes('.') && p.trim().length > 0).map((p: string) => p[0]).join('').slice(0, 2).toUpperCase() || 'DS'
+    : 'DS';
 
   const navigate = (item: InstructorNavItem) => {
     setIsMobileMenuOpen(false);
@@ -118,19 +136,22 @@ export const InstructorNavbar: React.FC<InstructorNavbarProps> = ({
           >
             Logout
           </button>
-          <div className="hidden max-w-[112px] leading-tight min-[1160px]:ml-5 min-[1160px]:block min-[1160px]:max-w-[144px]">
-            <div className="font-serif text-[8px] font-bold min-[1024px]:text-[9px]">
-              Dr. Eng. Herman Tolle, S.T., M.T.
+          <div className="hidden max-w-[125px] leading-tight min-[1160px]:ml-5 min-[1160px]:block min-[1160px]:max-w-[170px]">
+            <div className="font-serif text-[8.5px] font-bold min-[1024px]:text-[9.5px] truncate text-[#1b1b1e]" title={teacherName}>
+              {teacherName}
             </div>
-            <div className="mt-0.5 text-[7px] font-bold text-[#747687] min-[1024px]:text-[8px]">
-              NIP: 198005122005011002
-            </div>
+            {teacherNip ? (
+              <div className="mt-0.5 text-[7px] font-bold text-[#747687] min-[1024px]:text-[8px] truncate" title={teacherNip}>
+                {teacherNip}
+              </div>
+            ) : null}
           </div>
           <div
-            aria-label="Profil Dr. Eng. Herman Tolle"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0038d1] text-white"
+            aria-label={`Profil ${teacherName}`}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0038d1] text-white font-mono font-bold text-xs shadow-[1.5px_1.5px_0_#1b1b1e]"
+            title={teacherName}
           >
-            <img src="/figma/dashboard/59e02.svg" width={12} height={12} alt="" aria-hidden="true" />
+            {initials}
           </div>
           <button
             type="button"

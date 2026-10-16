@@ -14,15 +14,19 @@ class AIService:
 
     @classmethod
     async def generate_concept_map_draft(cls, topic: str, text: str, target_node_count: int = 7) -> AIDraftResponse:
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                return await cls._call_gemini_api(topic, text, target_node_count, gemini_key)
+            except Exception as e:
+                print(f"[Gemini API Error] {e}")
+
         api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
-        
-        # If API key is available, attempt external LLM extraction with JSON schema
         if api_key:
             try:
                 return await cls._call_external_llm(topic, text, target_node_count, api_key)
             except Exception as e:
-                # Fallback to local heuristic extraction if external API fails
-                pass
+                print(f"[LLM API Error] {e}")
 
         return cls._generate_heuristic_draft(topic, text, target_node_count)
 
@@ -144,4 +148,106 @@ Return STRICT JSON with format:
                 edges=edges,
                 confidence_score=content.get("confidence_score", 0.90),
                 generation_notes=content.get("generation_notes", "Extracted via LLM API")
+            )
+
+    @classmethod
+    async def _call_gemini_api(cls, topic: str, text: str, target_count: int, api_key: str) -> AIDraftResponse:
+        """
+        Calls Google Gemini API (gemini-3.8-flash) with native JSON output mode.
+        Extracts high-fidelity concept maps (nodes and directed edges) from curriculum materials.
+        """
+        import json
+        candidate_models = ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"]
+        
+        system_instruction = (
+            "You are an expert pedagogical concept map builder following Kit-Build principles. "
+            "Extract essential concepts (nodes) and explicit, labeled, directed relationships (edges) from the provided instructional text. "
+            "You must respond ONLY with a JSON object adhering to the specified schema without Markdown fences."
+        )
+
+        user_prompt = f"""
+Topik: "{topic}"
+Jumlah konsep target: {target_count} keping.
+
+Materi Ajar / Dokumen:
+{text[:6000]}
+
+Format JSON yang diwajibkan:
+{{
+  "topic": "{topic}",
+  "nodes": [
+    {{"id": "c1", "label": "Nama Konsep Singkat", "description": "Deskripsi singkat fungsi konsep", "x": 300, "y": 80}}
+  ],
+  "edges": [
+    {{"id": "e1", "source": "c1", "target": "c2", "label": "predikat relasi", "is_bidirectional": false}}
+  ],
+  "confidence_score": 0.95,
+  "generation_notes": "Penjelasan singkat struktur materi yang diekstraksi."
+}}
+"""
+
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": system_instruction}]
+            },
+            "contents": [
+                {
+                    "parts": [{"text": user_prompt}]
+                }
+            ],
+            "generationConfig": {
+                "response_mime_type": "application/json",
+                "temperature": 0.2
+            }
+        }
+
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            last_err = None
+            for model_name in candidate_models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    res_json = resp.json()
+                    candidates = res_json.get("candidates", [])
+                    if candidates:
+                        raw_text = candidates[0]["content"]["parts"][0]["text"]
+                        content = json.loads(raw_text)
+                        break
+                else:
+                    last_err = f"Model {model_name} returned status {resp.status_code}: {resp.text}"
+            else:
+                raise Exception(last_err or "All Gemini candidate models failed.")
+
+            # Assign aesthetic default coordinates if missing or zero
+            raw_nodes = content.get("nodes", [])
+            nodes = []
+            for idx, n in enumerate(raw_nodes):
+                x = n.get("x") or (200 + (idx % 3) * 220)
+                y = n.get("y") or (80 + (idx // 3) * 150)
+                nodes.append(ConceptNode(
+                    id=n.get("id") or f"c-{idx+1}",
+                    label=n.get("label", f"Konsep {idx+1}"),
+                    description=n.get("description", ""),
+                    x=x,
+                    y=y
+                ))
+
+            edges = [
+                ConceptEdge(
+                    id=e.get("id") or f"e-{idx+1}",
+                    source=e["source"],
+                    target=e["target"],
+                    label=e["label"],
+                    is_bidirectional=e.get("is_bidirectional", False)
+                )
+                for idx, e in enumerate(content.get("edges", []))
+                if e.get("source") and e.get("target")
+            ]
+
+            return AIDraftResponse(
+                topic=content.get("topic", topic),
+                nodes=nodes,
+                edges=edges,
+                confidence_score=content.get("confidence_score", 0.95),
+                generation_notes=content.get("generation_notes", "Ekstraksi berhasil via Google Gemini AI")
             )

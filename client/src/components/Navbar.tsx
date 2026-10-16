@@ -10,7 +10,9 @@ import {
   School,
   Menu,
   X,
+  User as UserIcon,
 } from 'lucide-react';
+import { User } from '../types/maply';
 
 export type ActiveTab = 'onboarding' | 'teacher' | 'student' | 'analytics';
 export type StudentSubView = 'dashboard' | 'assessments' | 'workspace' | 'evaluation';
@@ -22,6 +24,7 @@ interface NavbarProps {
   onStudentSubViewChange?: (subView: StudentSubView) => void;
   backendOnline?: boolean;
   onOpenAuthModal?: (role?: 'student' | 'teacher') => void;
+  currentUser?: User | null;
   studentName?: string;
   studentNim?: string;
   onLogout?: () => void;
@@ -49,6 +52,14 @@ const TEACHER_NAV_ITEMS: TeacherNavItem[] = [
   { id: 'analytics', label: 'Class Analytics & Gaps' }
 ];
 
+const getInitials = (name?: string) => {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onTabChange,
@@ -56,10 +67,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   onStudentSubViewChange,
   backendOnline = false,
   onOpenAuthModal,
-  studentName = 'Ahmad Rizky',
-  studentNim = '225150201111048',
+  currentUser,
+  studentName = 'Mahasiswa',
+  studentNim = '-',
   onLogout
 }) => {
+  const activeStudentName = currentUser?.full_name || studentName || 'Mahasiswa';
+  const activeStudentNim = currentUser?.identifier || studentNim || '-';
+  const activeTeacherName = currentUser?.role === 'teacher' ? (currentUser.full_name || 'Dosen Pengampu') : (currentUser?.full_name || 'Dosen Pengampu');
+  const activeTeacherNip = currentUser?.role === 'teacher' ? (currentUser.identifier ? `NIP: ${currentUser.identifier}` : 'Dosen Pengampu') : (currentUser?.identifier ? `NIP: ${currentUser.identifier}` : 'Dosen Pengampu • FILKOM UB');
+
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isStudentMobileNavOpen, setIsStudentMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -329,33 +346,60 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* ========================================================= */}
         {isHomeSection && (
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            {/* Masuk / Login Button */}
-            <button
-              onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
-            >
-              <LogIn className="w-4 h-4 text-[#1B1B1E] stroke-[2.5]" />
-              <span>Masuk / Login</span>
-            </button>
+            {currentUser ? (
+              <>
+                <button
+                  onClick={() => onTabChange(currentUser.role === 'teacher' ? 'teacher' : 'student')}
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0038D1] hover:bg-[#1A4BDB] text-white font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer"
+                >
+                  <UserIcon className="w-3.5 h-3.5 text-white" />
+                  <span>Buka {currentUser.role === 'teacher' ? 'Portal Dosen' : 'Dashboard'}</span>
+                </button>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
+                  <div className="w-6 h-6 rounded-full bg-[#1B1B1E] text-white flex items-center justify-center font-serif font-bold text-[10px]">
+                    {getInitials(currentUser.full_name)}
+                  </div>
+                  <span className="text-xs font-bold text-[#1B1B1E] max-w-[120px] truncate">{currentUser.full_name}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogoutAction}
+                  className="rounded-full bg-[#DA3437] hover:bg-[#b02225] px-3 py-1.5 text-[11px] font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] transition-all cursor-pointer"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Masuk / Login Button */}
+                <button
+                  onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4 text-[#1B1B1E] stroke-[2.5]" />
+                  <span>Masuk / Login</span>
+                </button>
 
-            {/* Akses: Mahasiswa / Dosen Toggle Pill */}
-            <div className="flex items-center gap-1 p-1 rounded-full bg-[#EAE7EB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs select-none">
-              <span className="px-2 text-xs font-serif font-bold text-[#444655]">Akses:</span>
-              <button
-                type="button"
-                onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
-                className="px-3.5 py-1 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white font-serif font-black text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
-              >
-                Mahasiswa
-              </button>
-              <button
-                type="button"
-                onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onTabChange('teacher'))}
-                className="px-3.5 py-1 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] border border-[#1B1B1E] font-serif font-bold text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
-              >
-                Dosen
-              </button>
-            </div>
+                {/* Akses: Mahasiswa / Dosen Toggle Pill */}
+                <div className="flex items-center gap-1 p-1 rounded-full bg-[#EAE7EB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs select-none">
+                  <span className="px-2 text-xs font-serif font-bold text-[#444655]">Akses:</span>
+                  <button
+                    type="button"
+                    onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
+                    className="px-3.5 py-1 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white font-serif font-black text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
+                  >
+                    Mahasiswa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onTabChange('teacher'))}
+                    className="px-3.5 py-1 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] border border-[#1B1B1E] font-serif font-bold text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
+                  >
+                    Dosen
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -434,11 +478,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                   <div className="flex h-[38px] items-center gap-2 rounded-full border-2 border-[#1B1B1E] bg-white pl-1.5 pr-2.5 shadow-[2px_2px_0px_#1B1B1E]">
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1B1B1E] bg-[#0038D1] font-serif text-xs font-black text-white">
-                      AR
+                      {getInitials(activeStudentName)}
                     </div>
                     <div className="hidden sm:flex max-w-[150px] flex-col text-left leading-tight">
-                      <span className="truncate text-xs font-bold text-[#1B1B1E]">{studentName}</span>
-                      <span className="text-[9px] font-mono text-[#71717A]">NIM: {studentNim}</span>
+                      <span className="truncate text-xs font-bold text-[#1B1B1E]">{activeStudentName}</span>
+                      <span className="text-[9px] font-mono text-[#71717A]">NIM: {activeStudentNim}</span>
                     </div>
                   </div>
                 </div>
@@ -528,11 +572,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       title="Profil Mahasiswa"
                     >
                       <div className="w-7 h-7 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-xs border border-[#1B1B1E]">
-                        AR
+                        {getInitials(activeStudentName)}
                       </div>
                       <div className="hidden sm:flex flex-col text-left leading-tight">
-                        <span className="text-xs font-bold text-[#1B1B1E]">{studentName}</span>
-                        <span className="text-[9.5px] font-mono text-[#71717A]">NIM: {studentNim}</span>
+                        <span className="text-xs font-bold text-[#1B1B1E]">{activeStudentName}</span>
+                        <span className="text-[9.5px] font-mono text-[#71717A]">NIM: {activeStudentNim}</span>
                       </div>
                     </button>
 
@@ -541,14 +585,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                         {/* Header Profile Card */}
                         <div className="flex items-center gap-3 pb-3 border-b-2 border-[#1B1B1E]/10">
                           <div className="w-10 h-10 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
-                            AR
+                            {getInitials(activeStudentName)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-serif font-black text-[#1B1B1E] truncate leading-tight">
-                              {studentName}
+                              {activeStudentName}
                             </p>
                             <p className="text-[10px] font-mono text-[#555] font-semibold mt-0.5">
-                              NIM: {studentNim}
+                              NIM: {activeStudentNim}
                             </p>
                             <span className="inline-block px-1.5 py-0.2 rounded bg-[#EEF2FF] border border-[#C7D2FE] text-[9px] font-mono font-bold text-[#0038D1] mt-1">
                               Teknik Informatika &bull; FILKOM UB
@@ -736,18 +780,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-[38px] h-[38px] rounded-full bg-[#FFDDB8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-center text-[#2A1700] font-serif font-black text-xs cursor-pointer hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                   title="Akun Dosen FILKOM UB"
                 >
-                  HT
+                  {getInitials(activeTeacherName)}
                 </button>
 
                 {showProfileMenu && (
                   <div className="absolute right-0 mt-2 w-64 bg-white border-2 border-[#1B1B1E] rounded-xl shadow-[4px_4px_0px_#1B1B1E] p-3 z-50">
                     <div className="flex items-center gap-2.5 pb-2.5 border-b border-[#1B1B1E]/15">
                       <div className="w-8 h-8 rounded-full bg-[#FFDDB8] text-[#2A1700] flex items-center justify-center font-bold text-xs border border-[#1B1B1E]">
-                        HT
+                        {getInitials(activeTeacherName)}
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-[#1B1B1E] leading-tight">Dr. Eng. Herman Tolle</p>
-                        <p className="text-[10px] text-neutral-500">Dosen Pengampu • FILKOM UB</p>
+                        <p className="text-xs font-bold text-[#1B1B1E] leading-tight">{activeTeacherName}</p>
+                        <p className="text-[10px] text-neutral-500">{activeTeacherNip}</p>
                       </div>
                     </div>
                     <div className="pt-2 text-xs text-neutral-700 space-y-1">

@@ -14,7 +14,7 @@ import {
   Edge,
   Node
 } from '@xyflow/react';
-import { MasterConceptMap, AssessmentConfig, AIDraftResponse, ConceptNode, ConceptEdge } from '../types/maply';
+import { MasterConceptMap, AssessmentConfig, AIDraftResponse, ConceptNode, ConceptEdge, User } from '../types/maply';
 import { generateAIDraft } from '../lib/api';
 import {
   Sparkles,
@@ -38,6 +38,7 @@ interface TeacherViewProps {
   masterMap: MasterConceptMap;
   assessmentConfig: AssessmentConfig;
   backendOnline: boolean;
+  currentUser?: User | null;
   onSaveMasterMap: (newMap: MasterConceptMap) => Promise<void>;
   onSaveAssessment: (config: AssessmentConfig) => Promise<void>;
   initiallyOpenAIDraft?: boolean;
@@ -113,6 +114,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
   masterMap,
   assessmentConfig,
   backendOnline,
+  currentUser,
   onSaveMasterMap,
   onSaveAssessment,
   initiallyOpenAIDraft = false,
@@ -332,7 +334,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
     return (
       <div className="min-h-screen bg-[#fbf8fc] text-[#1b1b1e]">
-        <InstructorNavbar activeItem="Maps" onNavigate={handleNav} onLogout={onLogout} />
+        <InstructorNavbar activeItem="Maps" currentUser={currentUser} onNavigate={handleNav} onLogout={onLogout} />
 
         {toast && (
           <div
@@ -770,7 +772,7 @@ export const TeacherView: React.FC<TeacherViewProps> = ({
 
   return (
     <div className="flex min-h-screen flex-col bg-[#FAF7F2]">
-      <InstructorNavbar activeItem="Maps" onNavigate={handleNav} onLogout={onLogout} />
+      <InstructorNavbar activeItem="Maps" currentUser={currentUser} onNavigate={handleNav} onLogout={onLogout} />
       {/* Sub-Header Ribbon */}
       <div className="bg-[#FAF7F2] border-b-2 border-[#1B1B1E] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-4 z-10 shadow-[0_2px_0px_#1B1B1E]">
         <div>

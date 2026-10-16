@@ -6,7 +6,9 @@ import {
   ClassKnowledgeGapSummary,
   AIDraftResponse,
   ConceptNode,
-  ConceptEdge
+  ConceptEdge,
+  User,
+  AuthResponse
 } from '../types/maply';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -38,10 +40,12 @@ export const INITIAL_ASSESSMENT: AssessmentConfig = {
   id: 'asm-1',
   title: 'Kuis Pemahaman Konseptual Arsitektur CPU',
   description: 'Susun kembali Concept Kit untuk menguji pemahaman aliran data antar-komponen CPU.',
+  instructions: 'Rangkai kembali simpul konsep CPU dan alur transfer data dengan tepat.',
   master_map_id: 'map-cpu-1',
+  exam_token: 'KBT-9428',
   duration_minutes: 30,
   allow_bidirectional_tolerance: true,
-  tolerated_symmetric_labels: ['transfers data with', 'interacts with', 'terhubung dengan'],
+  tolerated_symmetric_labels: ['transfers data with', 'interacts with', 'terhubung dengan', 'connected to'],
   randomize_kit: true,
   weights: {
     concept_recognition: 0.20,
@@ -49,6 +53,51 @@ export const INITIAL_ASSESSMENT: AssessmentConfig = {
     structural_understanding: 0.30
   }
 };
+
+// Auth Token Local Helpers
+export function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('maply_auth_token');
+}
+
+export function setStoredToken(token: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('maply_auth_token', token);
+  }
+}
+
+export function clearStoredToken(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('maply_auth_token');
+    localStorage.removeItem('maply_active_user');
+  }
+}
+
+export function getStoredUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem('maply_active_user');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: User): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('maply_active_user', JSON.stringify(user));
+  }
+}
+
+function getAuthHeaders(): HeadersInit {
+  const token = getStoredToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 export async function checkBackendHealth(): Promise<boolean> {
   try {
@@ -69,14 +118,73 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
-export async function saveMasterMap(map: MasterConceptMap): Promise<MasterConceptMap> {
-  const res = await fetch(`${API_BASE_URL}/maps/master`, {
+// ==========================================
+// AUTHENTICATION CLIENT (REAL EMAIL/PASSWORD)
+// ==========================================
+
+export async function registerUser(payload: {
+  email: string;
+  password: string;
+  full_name: string;
+  role: 'student' | 'teacher';
+  identifier?: string;
+}): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(map)
+    body: JSON.stringify(payload)
   });
   if (!res.ok) throw new Error(await readError(res));
-  return res.json();
+  const data: AuthResponse = await res.json();
+  setStoredToken(data.access_token);
+  setStoredUser(data.user);
+  return data;
+}
+
+export async function loginUser(payload: { email: string; password: string }): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  const data: AuthResponse = await res.json();
+  setStoredToken(data.access_token);
+  setStoredUser(data.user);
+  return data;
+}
+
+export async function fetchCurrentUser(): Promise<User | null> {
+  const token = getStoredToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: getAuthHeaders(),
+      cache: 'no-store'
+    });
+    if (res.ok) {
+      const u = await res.json();
+      setStoredUser(u);
+      return u;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch user with token:', err);
+  }
+  return null;
+}
+
+// ==========================================
+// ASSESSMENT & MASTER MAPS CLIENT
+// ==========================================
+
+export async function fetchAssessmentsList(): Promise<AssessmentConfig[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/assessments`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('Backend unavailable, fallback assessments list:', err);
+  }
+  return [INITIAL_ASSESSMENT];
 }
 
 export async function fetchAssessment(asmId: string = 'asm-1'): Promise<AssessmentConfig> {
@@ -92,11 +200,48 @@ export async function fetchAssessment(asmId: string = 'asm-1'): Promise<Assessme
 export async function updateAssessment(config: AssessmentConfig): Promise<AssessmentConfig> {
   const res = await fetch(`${API_BASE_URL}/assessments/${config.id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(config)
   });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();
+}
+
+export async function verifyExamToken(token: string): Promise<{ valid: boolean; assessment?: AssessmentConfig; message: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/assessments/verify-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: token.trim().toUpperCase() })
+    });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('Backend token verification unavailable:', err);
+  }
+  return {
+    valid: false,
+    message: 'Gagal memverifikasi token ke server.'
+  };
+}
+
+export async function saveMasterMap(map: MasterConceptMap): Promise<MasterConceptMap> {
+  const res = await fetch(`${API_BASE_URL}/maps/master`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(map)
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+export async function fetchMasterMapsList(): Promise<MasterConceptMap[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/maps/master`, { cache: 'no-store' });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn('Backend unavailable, fallback master maps list:', err);
+  }
+  return [INITIAL_MASTER_MAP];
 }
 
 export async function fetchMasterMap(mapId: string = 'map-cpu-1'): Promise<MasterConceptMap> {
@@ -127,108 +272,42 @@ export async function submitStudentMap(
   asmId: string,
   studentName: string,
   nodes: ConceptNode[],
-  edges: ConceptEdge[]
+  edges: ConceptEdge[],
+  studentId?: string
 ): Promise<EvaluationResult> {
+  const activeUser = getStoredUser();
+  const effectiveId = studentId || activeUser?.id || ('mhs-' + Math.floor(Math.random() * 900 + 100));
+  const effectiveName = studentName || activeUser?.full_name || 'Mahasiswa';
+
+  const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/submit`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      student_id: effectiveId,
+      student_name: effectiveName,
+      assessment_id: asmId,
+      submitted_nodes: nodes,
+      submitted_edges: edges
+    })
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return await res.json();
+}
+
+export async function fetchMySubmissions(studentId?: string): Promise<EvaluationResult[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        student_id: 'mhs-' + Math.floor(Math.random() * 900 + 100),
-        student_name: studentName,
-        assessment_id: asmId,
-        submitted_nodes: nodes,
-        submitted_edges: edges
-      })
+    const activeUser = getStoredUser();
+    const id = studentId || activeUser?.id;
+    const url = id ? `${API_BASE_URL}/students/my-submissions?student_id=${encodeURIComponent(id)}` : `${API_BASE_URL}/students/my-submissions`;
+    const res = await fetch(url, {
+      headers: getAuthHeaders(),
+      cache: 'no-store'
     });
     if (res.ok) return await res.json();
   } catch (err) {
-    console.warn('Backend unavailable, evaluating on client:', err);
+    console.warn('Failed to fetch personal submissions:', err);
   }
-
-  // Client-side fallback deterministic evaluation
-  const masterEdges = INITIAL_MASTER_MAP.edges;
-  let tp = 0;
-  let fp = 0;
-  const evaluatedEdges: any[] = [];
-  const matchedMasterIds = new Set<string>();
-
-  for (const sEdge of edges) {
-    const match = masterEdges.find(
-      (m) =>
-        (m.source === sEdge.source && m.target === sEdge.target && m.label.toLowerCase() === sEdge.label.toLowerCase()) ||
-        (m.target === sEdge.source && m.source === sEdge.target && m.label.toLowerCase() === sEdge.label.toLowerCase() && m.is_bidirectional)
-    );
-    if (match) {
-      tp++;
-      matchedMasterIds.add(match.id);
-      evaluatedEdges.push({
-        source: sEdge.source,
-        source_label: sEdge.source,
-        target: sEdge.target,
-        target_label: sEdge.target,
-        label: sEdge.label,
-        status: 'correct',
-        note: 'Relasi dan arah sesuai dengan acuan.'
-      });
-    } else {
-      fp++;
-      evaluatedEdges.push({
-        source: sEdge.source,
-        source_label: sEdge.source,
-        target: sEdge.target,
-        target_label: sEdge.target,
-        label: sEdge.label,
-        status: 'incorrect',
-        note: 'Relasi tidak sesuai dengan struktur acuan.'
-      });
-    }
-  }
-
-  const fn = masterEdges.length - matchedMasterIds.size;
-  for (const mEdge of masterEdges) {
-    if (!matchedMasterIds.has(mEdge.id)) {
-      evaluatedEdges.push({
-        source: mEdge.source,
-        source_label: mEdge.source,
-        target: mEdge.target,
-        target_label: mEdge.target,
-        label: mEdge.label,
-        status: 'missing',
-        note: `Relasi '${mEdge.label}' belum dibuat.`
-      });
-    }
-  }
-
-  const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
-  const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
-  const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
-
-  const conceptRec = (nodes.length / INITIAL_MASTER_MAP.nodes.length) * 100;
-  const relAcc = precision * 100;
-  const structUnd = f1 * 100;
-  const total = Math.round(0.2 * conceptRec + 0.5 * relAcc + 0.3 * structUnd);
-
-  return {
-    student_id: 'mhs-local',
-    student_name: studentName,
-    assessment_id: asmId,
-    total_score: total,
-    concept_recognition_score: Math.round(conceptRec),
-    relationship_accuracy_score: Math.round(relAcc),
-    structural_understanding_score: Math.round(structUnd),
-    metrics: {
-      precision: Number(precision.toFixed(2)),
-      recall: Number(recall.toFixed(2)),
-      f1_score: Number(f1.toFixed(2)),
-      true_positive: tp,
-      false_positive: fp,
-      false_negative: fn
-    },
-    evaluated_edges: evaluatedEdges,
-    knowledge_gaps: fn > 0 ? ['Hubungan komponen memori dan register memerlukan penguatan konsep aliran data.'] : [],
-    strengths: tp > 0 ? ['Identifikasi struktur utama CPU berhasil direkonstruksi dengan tepat.'] : []
-  };
+  return [];
 }
 
 export async function fetchClassAnalytics(asmId: string = 'asm-1'): Promise<ClassKnowledgeGapSummary> {
@@ -236,96 +315,32 @@ export async function fetchClassAnalytics(asmId: string = 'asm-1'): Promise<Clas
     const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/analytics`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
-    console.warn('Backend unavailable, using initial analytics data:', err);
+    console.warn('Backend analytics unavailable:', err);
   }
 
+  // Clean empty state when no data exists (NO FAKE DATA)
   return {
     assessment_id: asmId,
-    total_students: 42,
-    average_score: 76.4,
+    total_students: 0,
+    average_score: 0.0,
     score_distribution: {
-      '<60': 3,
-      '60-69': 7,
-      '70-79': 15,
-      '80-89': 11,
-      '90-100': 6
+      '<60': 0,
+      '60-69': 0,
+      '70-79': 0,
+      '80-89': 0,
+      '90-100': 0
     },
-    problematic_relationships: [
-      {
-        key: 'Register -> Memory',
-        source: 'Register',
-        target: 'Memory (RAM)',
-        label: 'transfers data with',
-        correct_percentage: 38.1,
-        error_percentage: 61.9
-      },
-      {
-        key: 'ALU -> Register',
-        source: 'ALU',
-        target: 'Register',
-        label: 'stores temporary result in',
-        correct_percentage: 47.6,
-        error_percentage: 52.4
-      },
-      {
-        key: 'Control Unit -> ALU',
-        source: 'Control Unit',
-        target: 'ALU',
-        label: 'controls',
-        correct_percentage: 61.9,
-        error_percentage: 38.1
-      }
-    ],
-    well_understood_relationships: [
-      {
-        key: 'CPU -> ALU',
-        source: 'CPU',
-        target: 'ALU',
-        label: 'contains',
-        correct_percentage: 95.2,
-        error_percentage: 4.8
-      },
-      {
-        key: 'CPU -> Control Unit',
-        source: 'CPU',
-        target: 'Control Unit',
-        label: 'contains',
-        correct_percentage: 92.8,
-        error_percentage: 7.2
-      }
-    ]
+    problematic_relationships: [],
+    well_understood_relationships: []
   };
 }
 
 export async function generateAIDraft(topic: string, materialText: string): Promise<AIDraftResponse> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/ai/draft`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, material_text: materialText, target_node_count: 6 })
-    });
-    if (res.ok) return await res.json();
-  } catch (err) {
-    console.warn('Backend unavailable, using local mock AI draft:', err);
-  }
-
-  return {
-    topic,
-    nodes: [
-      { id: 'n-cpu', label: 'CPU', description: 'Unit pemroses sentral', x: 280, y: 40 },
-      { id: 'n-alu', label: 'ALU', description: 'Operasi aritmatika & logika', x: 140, y: 170 },
-      { id: 'n-cu', label: 'Control Unit', description: 'Pengendali siklus instruksi', x: 420, y: 170 },
-      { id: 'n-reg', label: 'Register', description: 'Penyimpan data internal tercepat', x: 140, y: 310 },
-      { id: 'n-mem', label: 'Memory (RAM)', description: 'Penyimpanan program & data eksternal', x: 280, y: 450 },
-    ],
-    edges: [
-      { id: 'ae1', source: 'n-cpu', target: 'n-alu', label: 'contains' },
-      { id: 'ae2', source: 'n-cpu', target: 'n-cu', label: 'contains' },
-      { id: 'ae3', source: 'n-alu', target: 'n-reg', label: 'stores temporary result in' },
-      { id: 'ae4', source: 'n-cu', target: 'n-alu', label: 'controls' },
-      { id: 'ae5', source: 'n-reg', target: 'n-mem', label: 'transfers data with', is_bidirectional: true },
-    ],
-    confidence_score: 0.91,
-    generation_notes: 'Draf otomatis berhasil mengekstrak 5 konsep utama dan 5 relasi berlabel dari materi komputer.'
-  };
+  const res = await fetch(`${API_BASE_URL}/ai/draft`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ topic, material_text: materialText, target_node_count: 6 })
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return await res.json();
 }
