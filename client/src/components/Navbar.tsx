@@ -10,9 +10,7 @@ import {
   School,
   Menu,
   X,
-  User as UserIcon,
 } from 'lucide-react';
-import { User } from '../types/maply';
 
 export type ActiveTab = 'onboarding' | 'teacher' | 'student' | 'analytics';
 export type StudentSubView = 'dashboard' | 'assessments' | 'workspace' | 'evaluation';
@@ -24,21 +22,19 @@ interface NavbarProps {
   onStudentSubViewChange?: (subView: StudentSubView) => void;
   backendOnline?: boolean;
   onOpenAuthModal?: (role?: 'student' | 'teacher') => void;
-  currentUser?: User | null;
   studentName?: string;
   studentNim?: string;
   onLogout?: () => void;
 }
 
 interface StudentNavItem {
-  id: 'dashboard' | 'assessments' | 'workspace' | 'evaluation';
+  id: 'dashboard' | 'assessments' | 'evaluation';
   label: string;
 }
 
 const STUDENT_NAV_ITEMS: StudentNavItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'assessments', label: 'My Assessments' },
-  { id: 'workspace', label: 'Workspace' },
   { id: 'evaluation', label: 'Personal Results' }
 ];
 
@@ -52,14 +48,6 @@ const TEACHER_NAV_ITEMS: TeacherNavItem[] = [
   { id: 'analytics', label: 'Class Analytics & Gaps' }
 ];
 
-const getInitials = (name?: string) => {
-  if (!name) return 'U';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'U';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-};
-
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onTabChange,
@@ -67,18 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onStudentSubViewChange,
   backendOnline = false,
   onOpenAuthModal,
-  currentUser,
-  studentName = 'Mahasiswa',
-  studentNim = '-',
+  studentName = 'Ahmad Rizky',
+  studentNim = '225150201111048',
   onLogout
 }) => {
-  const activeStudentName = currentUser?.full_name || studentName || 'Mahasiswa';
-  const activeStudentNim = currentUser?.identifier || studentNim || '-';
-  const activeTeacherName = currentUser?.role === 'teacher' ? (currentUser.full_name || 'Dosen Pengampu') : (currentUser?.full_name || 'Dosen Pengampu');
-  const activeTeacherNip = currentUser?.role === 'teacher' ? (currentUser.identifier ? `NIP: ${currentUser.identifier}` : 'Dosen Pengampu') : (currentUser?.identifier ? `NIP: ${currentUser.identifier}` : 'Dosen Pengampu • FILKOM UB');
-
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isStudentMobileNavOpen, setIsStudentMobileNavOpen] = useState(false);
+  const [isTeacherMobileNavOpen, setIsTeacherMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Close profile dropdown when clicking outside
@@ -124,27 +107,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   // =========================================================================
   // HOVER & ACTIVE SLIDING PILL INDICATOR MECHANISM FOR STUDENT NAVBAR
   // =========================================================================
-  const [hoveredStudentTab, setHoveredStudentTab] = useState<'dashboard' | 'assessments' | 'workspace' | 'evaluation' | null>(null);
+  const [hoveredStudentTab, setHoveredStudentTab] = useState<'dashboard' | 'assessments' | 'evaluation' | null>(null);
   const studentNavRef = useRef<HTMLElement>(null);
-  const studentTabRefs = useRef<{ [key in 'dashboard' | 'assessments' | 'workspace' | 'evaluation']?: HTMLButtonElement | null }>({});
+  const studentTabRefs = useRef<{ [key in 'dashboard' | 'assessments' | 'evaluation']?: HTMLButtonElement | null }>({});
   const [studentIndicatorStyle, setStudentIndicatorStyle] = useState<{
     left: number;
     width: number;
     opacity: number;
     borderRadius: string;
   }>({
-    left: -6,
+    left: -4,
     width: 0,
     opacity: 0,
     borderRadius: '0 9999px 9999px 0',
   });
 
-  const currentStudentKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation' =
-    studentSubView;
+  const currentStudentKey: 'dashboard' | 'assessments' | 'evaluation' =
+    studentSubView === 'assessments' ? 'assessments' : studentSubView === 'evaluation' ? 'evaluation' : 'dashboard';
 
-  const activeStudentTabKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation' = hoveredStudentTab ?? currentStudentKey;
+  const activeStudentTabKey: 'dashboard' | 'assessments' | 'evaluation' = hoveredStudentTab ?? currentStudentKey;
 
-  const updateStudentIndicator = useCallback((targetKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation') => {
+  const updateStudentIndicator = useCallback((targetKey: 'dashboard' | 'assessments' | 'evaluation') => {
     const navEl = studentNavRef.current;
     const targetEl = studentTabRefs.current[targetKey];
     if (navEl && targetEl) {
@@ -191,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   }, [activeStudentTabKey, updateStudentIndicator, isStudentSection, studentSubView]);
 
-  const handleStudentTabHover = (tabId: 'dashboard' | 'assessments' | 'workspace' | 'evaluation') => {
+  const handleStudentTabHover = (tabId: 'dashboard' | 'assessments' | 'evaluation') => {
     setHoveredStudentTab(tabId);
     updateStudentIndicator(tabId);
   };
@@ -213,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     opacity: number;
     borderRadius: string;
   }>({
-    left: -6,
+    left: -4,
     width: 0,
     opacity: 0,
     borderRadius: '0 9999px 9999px 0',
@@ -232,14 +215,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       let left = targetRect.left - navRect.left;
       let width = targetRect.width;
-      let borderRadius = '9999px 9999px 9999px 9999px';
+      let borderRadius = '9999px';
 
       if (isFirst) {
-        width = targetRect.right - navRect.left + 6;
-        left = -6;
+        // Bleed past left border for zero-gap fit against container's rounded cap
+        left = -4;
+        width = targetRect.right - navRect.left + 4;
         borderRadius = '0 9999px 9999px 0';
       } else if (isLast) {
-        width = navRect.right - targetRect.left + 6;
+        // Bleed past right border for zero-gap fit against container's rounded cap
+        left = targetRect.left - navRect.left;
+        width = navRect.right - targetRect.left + 4;
         borderRadius = '9999px 0 0 9999px';
       }
 
@@ -346,60 +332,33 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* ========================================================= */}
         {isHomeSection && (
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            {currentUser ? (
-              <>
-                <button
-                  onClick={() => onTabChange(currentUser.role === 'teacher' ? 'teacher' : 'student')}
-                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0038D1] hover:bg-[#1A4BDB] text-white font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer"
-                >
-                  <UserIcon className="w-3.5 h-3.5 text-white" />
-                  <span>Buka {currentUser.role === 'teacher' ? 'Portal Dosen' : 'Dashboard'}</span>
-                </button>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
-                  <div className="w-6 h-6 rounded-full bg-[#1B1B1E] text-white flex items-center justify-center font-serif font-bold text-[10px]">
-                    {getInitials(currentUser.full_name)}
-                  </div>
-                  <span className="text-xs font-bold text-[#1B1B1E] max-w-[120px] truncate">{currentUser.full_name}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLogoutAction}
-                  className="rounded-full bg-[#DA3437] hover:bg-[#b02225] px-3 py-1.5 text-[11px] font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] transition-all cursor-pointer"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                {/* Masuk / Login Button */}
-                <button
-                  onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4 text-[#1B1B1E] stroke-[2.5]" />
-                  <span>Masuk / Login</span>
-                </button>
+            {/* Masuk / Login Button */}
+            <button
+              onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] font-serif font-black text-xs sm:text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+            >
+              <LogIn className="w-4 h-4 text-[#1B1B1E] stroke-[2.5]" />
+              <span>Masuk / Login</span>
+            </button>
 
-                {/* Akses: Mahasiswa / Dosen Toggle Pill */}
-                <div className="flex items-center gap-1 p-1 rounded-full bg-[#EAE7EB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs select-none">
-                  <span className="px-2 text-xs font-serif font-bold text-[#444655]">Akses:</span>
-                  <button
-                    type="button"
-                    onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
-                    className="px-3.5 py-1 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white font-serif font-black text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
-                  >
-                    Mahasiswa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onTabChange('teacher'))}
-                    className="px-3.5 py-1 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] border border-[#1B1B1E] font-serif font-bold text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
-                  >
-                    Dosen
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Akses: Mahasiswa / Dosen Toggle Pill */}
+            <div className="flex items-center gap-1 p-1 rounded-full bg-[#EAE7EB] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs select-none">
+              <span className="px-2 text-xs font-serif font-bold text-[#444655]">Akses:</span>
+              <button
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('student') : onTabChange('student'))}
+                className="px-3.5 py-1 rounded-full bg-[#0038D1] hover:bg-[#2F54EB] text-white font-serif font-black text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
+              >
+                Mahasiswa
+              </button>
+              <button
+                type="button"
+                onClick={() => (onOpenAuthModal ? onOpenAuthModal('teacher') : onTabChange('teacher'))}
+                className="px-3.5 py-1 rounded-full bg-white hover:bg-slate-50 text-[#1B1B1E] border border-[#1B1B1E] font-serif font-bold text-xs shadow-[1px_1px_0px_#1B1B1E] cursor-pointer transition-all"
+              >
+                Dosen
+              </button>
+            </div>
           </div>
         )}
 
@@ -408,139 +367,57 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* ========================================================= */}
         {isStudentSection && (
           <>
-            {/* Workspace controls are in the workspace header; keep the primary app navigation here. */}
-            {studentSubView === 'workspace' ? (
-              <>
-                <nav
-                  ref={studentNavRef}
-                  onMouseLeave={handleStudentNavLeave}
-                  aria-label="Navigasi mahasiswa"
-                  className="relative hidden min-[900px]:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
-                >
-                  <div
-                    className="absolute -top-[2px] -bottom-[2px] left-0 bg-gradient-to-r from-[#0038D1] to-[#2F54EB] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
-                    style={{
-                      transform: `translateX(${studentIndicatorStyle.left}px)`,
-                      width: `${studentIndicatorStyle.width}px`,
-                      borderRadius: studentIndicatorStyle.borderRadius,
-                      opacity: studentIndicatorStyle.opacity,
-                    }}
-                  />
-                  {STUDENT_NAV_ITEMS.map((item, idx) => {
-                    const isFirst = idx === 0;
-                    const isLast = idx === STUDENT_NAV_ITEMS.length - 1;
-                    const isHighlighted = activeStudentTabKey === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        ref={(el) => {
-                          studentTabRefs.current[item.id] = el;
-                        }}
-                        type="button"
-                        aria-current={studentSubView === item.id ? 'page' : undefined}
-                        onClick={() => handleStudentNav(item.id)}
-                        onMouseEnter={() => handleStudentTabHover(item.id)}
-                        className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
-                          isFirst
-                            ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
-                            : isLast
-                            ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
-                            : 'px-4 sm:px-4.5'
-                        } ${
-                          isHighlighted
-                            ? 'text-white font-serif font-black tracking-tight'
-                            : 'text-[#444655] hover:text-[#1B1B1E] font-serif font-bold'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </nav>
+            {/* Center: Interactive Sliding Segmented Pill Nav with EQUAL TAB SIZES (Dashboard, My Assessments, Results) */}
+            <div className="flex items-center justify-center">
+              <nav
+                ref={studentNavRef}
+                onMouseLeave={handleStudentNavLeave}
+                aria-label="Navigasi mahasiswa"
+                className="relative hidden min-[900px]:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
+              >
+                {/* Seamless Blue Sliding Fill (Zero gap on curved ends via negative bleed & dynamic border radius) */}
+                <div
+                  className="absolute -top-[2px] -bottom-[2px] left-0 bg-gradient-to-r from-[#0038D1] to-[#2F54EB] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+                  style={{
+                    transform: `translateX(${studentIndicatorStyle.left}px)`,
+                    width: `${studentIndicatorStyle.width}px`,
+                    borderRadius: studentIndicatorStyle.borderRadius,
+                    opacity: studentIndicatorStyle.opacity,
+                  }}
+                />
 
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label={isStudentMobileNavOpen ? 'Tutup navigasi mahasiswa' : 'Buka navigasi mahasiswa'}
-                    aria-expanded={isStudentMobileNavOpen}
-                    aria-controls="student-mobile-navigation"
-                    onClick={() => setIsStudentMobileNavOpen((open) => !open)}
-                    className="min-[900px]:hidden h-[38px] w-[38px] flex items-center justify-center rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]"
-                  >
-                    {isStudentMobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogoutAction}
-                    className="rounded-full bg-[#DA3437] px-3 py-1.5 text-[10px] font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] transition-transform hover:-translate-y-px"
-                  >
-                    Logout
-                  </button>
-                  <div className="flex h-[38px] items-center gap-2 rounded-full border-2 border-[#1B1B1E] bg-white pl-1.5 pr-2.5 shadow-[2px_2px_0px_#1B1B1E]">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1B1B1E] bg-[#0038D1] font-serif text-xs font-black text-white">
-                      {getInitials(activeStudentName)}
-                    </div>
-                    <div className="hidden sm:flex max-w-[150px] flex-col text-left leading-tight">
-                      <span className="truncate text-xs font-bold text-[#1B1B1E]">{activeStudentName}</span>
-                      <span className="text-[9px] font-mono text-[#71717A]">NIM: {activeStudentNim}</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Dashboard, My Assessments, Workspace, and Results share one navigation. */
-              <>
-                {/* Center: Interactive Sliding Segmented Pill Nav with EQUAL TAB SIZES (Dashboard, My Assessments, Results) */}
-                <div className="flex items-center justify-center">
-                  <nav
-                    ref={studentNavRef}
-                    onMouseLeave={handleStudentNavLeave}
-                    aria-label="Navigasi mahasiswa"
-                    className="relative hidden min-[900px]:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
-                  >
-                    {/* Seamless Blue Sliding Fill (Zero gap on curved ends via negative bleed & dynamic border radius) */}
-                    <div
-                      className="absolute -top-[2px] -bottom-[2px] left-0 bg-gradient-to-r from-[#0038D1] to-[#2F54EB] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
-                      style={{
-                        transform: `translateX(${studentIndicatorStyle.left}px)`,
-                        width: `${studentIndicatorStyle.width}px`,
-                        borderRadius: studentIndicatorStyle.borderRadius,
-                        opacity: studentIndicatorStyle.opacity,
+                {STUDENT_NAV_ITEMS.map((item, idx) => {
+                  const isHighlighted = activeStudentTabKey === item.id;
+                  const isFirst = idx === 0;
+                  const isLast = idx === STUDENT_NAV_ITEMS.length - 1;
+                  return (
+                    <button
+                      key={item.id}
+                      ref={(el) => {
+                        studentTabRefs.current[item.id] = el;
                       }}
-                    />
-
-                    {STUDENT_NAV_ITEMS.map((item, idx) => {
-                      const isHighlighted = activeStudentTabKey === item.id;
-                      const isFirst = idx === 0;
-                      const isLast = idx === STUDENT_NAV_ITEMS.length - 1;
-                      return (
-                        <button
-                          key={item.id}
-                          ref={(el) => {
-                            studentTabRefs.current[item.id] = el;
-                          }}
-                          type="button"
-                          aria-current={studentSubView === item.id ? 'page' : undefined}
-                          onClick={() => handleStudentNav(item.id)}
-                          onMouseEnter={() => handleStudentTabHover(item.id)}
-                          className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
-                            isFirst
-                              ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
-                              : isLast
-                              ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
-                              : 'px-4 sm:px-4.5'
-                          } ${
-                            isHighlighted
-                              ? 'text-white font-serif font-black tracking-tight'
-                              : 'text-[#444655] hover:text-[#1B1B1E] font-serif font-bold'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </nav>
-                </div>
+                      type="button"
+                      aria-current={studentSubView === item.id ? 'page' : undefined}
+                      onClick={() => handleStudentNav(item.id)}
+                      onMouseEnter={() => handleStudentTabHover(item.id)}
+                      className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
+                        isFirst
+                          ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
+                          : isLast
+                          ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
+                          : 'px-4 sm:px-4.5'
+                      } ${
+                        isHighlighted
+                          ? 'text-white font-serif font-black tracking-tight'
+                          : 'text-[#444655] hover:text-[#1B1B1E] font-serif font-bold'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
                 {/* Right: Tactile Profile Pill & Dropdown (Course Badge Removed for Multi-Course Portfolio) */}
                 <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -572,11 +449,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       title="Profil Mahasiswa"
                     >
                       <div className="w-7 h-7 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-xs border border-[#1B1B1E]">
-                        {getInitials(activeStudentName)}
+                        AR
                       </div>
                       <div className="hidden sm:flex flex-col text-left leading-tight">
-                        <span className="text-xs font-bold text-[#1B1B1E]">{activeStudentName}</span>
-                        <span className="text-[9.5px] font-mono text-[#71717A]">NIM: {activeStudentNim}</span>
+                        <span className="text-xs font-bold text-[#1B1B1E]">{studentName}</span>
+                        <span className="text-[9.5px] font-mono text-[#71717A]">NIM: {studentNim}</span>
                       </div>
                     </button>
 
@@ -585,14 +462,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                         {/* Header Profile Card */}
                         <div className="flex items-center gap-3 pb-3 border-b-2 border-[#1B1B1E]/10">
                           <div className="w-10 h-10 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
-                            {getInitials(activeStudentName)}
+                            AR
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-serif font-black text-[#1B1B1E] truncate leading-tight">
-                              {activeStudentName}
+                              {studentName}
                             </p>
                             <p className="text-[10px] font-mono text-[#555] font-semibold mt-0.5">
-                              NIM: {activeStudentNim}
+                              NIM: {studentNim}
                             </p>
                             <span className="inline-block px-1.5 py-0.2 rounded bg-[#EEF2FF] border border-[#C7D2FE] text-[9px] font-mono font-bold text-[#0038D1] mt-1">
                               Teknik Informatika &bull; FILKOM UB
@@ -661,8 +538,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     )}
                   </div>
                 </div>
-              </>
-            )}
             {isStudentMobileNavOpen && (
               <nav
                 id="student-mobile-navigation"
@@ -699,51 +574,62 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* ========================================================= */}
         {isTeacherSection && (
           <>
-            {/* Teacher Tabs Bar with Sliding Pill */}
-            <nav
-              ref={teacherNavRef}
-              onMouseLeave={handleTeacherNavLeave}
-              className="relative hidden md:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none max-w-full"
-            >
-              <div
-                className="absolute -top-[2px] -bottom-[2px] left-0 bg-[#1B1B1E] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
-                style={{
-                  transform: `translateX(${teacherIndicatorStyle.left}px)`,
-                  width: `${teacherIndicatorStyle.width}px`,
-                  borderRadius: teacherIndicatorStyle.borderRadius,
-                  opacity: teacherIndicatorStyle.opacity,
-                }}
-              />
+            {/* Center: Teacher Tabs Bar with Seamless Blue Sliding Pill (Matching Student Nav) */}
+            <div className="flex items-center justify-center">
+              <nav
+                ref={teacherNavRef}
+                onMouseLeave={handleTeacherNavLeave}
+                className="relative flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
+              >
+                {/* Seamless Blue Sliding Fill (Exact match to student sliding indicator) */}
+                <div
+                  className="absolute -top-[2px] -bottom-[2px] left-0 bg-gradient-to-r from-[#0038D1] to-[#2F54EB] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+                  style={{
+                    transform: `translateX(${teacherIndicatorStyle.left}px)`,
+                    width: `${teacherIndicatorStyle.width}px`,
+                    borderRadius: teacherIndicatorStyle.borderRadius,
+                    opacity: teacherIndicatorStyle.opacity,
+                  }}
+                />
 
-              {TEACHER_NAV_ITEMS.map((item, idx) => {
-                const isHighlighted = activeTeacherTabKey === item.id;
-                const isFirst = idx === 0;
-                const isLast = idx === TEACHER_NAV_ITEMS.length - 1;
-                return (
-                  <button
-                    key={item.id}
-                    ref={(el) => {
-                      teacherTabRefs.current[item.id] = el;
-                    }}
-                    onClick={() => onTabChange(item.id)}
-                    onMouseEnter={() => handleTeacherTabHover(item.id)}
-                    className={`relative z-10 h-full px-4 flex items-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
-                      isFirst ? 'pl-5 pr-4' : isLast ? 'pl-4 pr-5' : 'px-4'
-                    } ${
-                      isHighlighted ? 'text-white font-serif font-black' : 'text-[#504E5C] hover:text-[#1B1B1E] font-serif font-bold'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </nav>
+                {TEACHER_NAV_ITEMS.map((item, idx) => {
+                  const isHighlighted = activeTeacherTabKey === item.id;
+                  const isFirst = idx === 0;
+                  const isLast = idx === TEACHER_NAV_ITEMS.length - 1;
+                  return (
+                    <button
+                      key={item.id}
+                      ref={(el) => {
+                        teacherTabRefs.current[item.id] = el;
+                      }}
+                      type="button"
+                      aria-current={currentTab === item.id ? 'page' : undefined}
+                      onClick={() => onTabChange(item.id)}
+                      onMouseEnter={() => handleTeacherTabHover(item.id)}
+                      className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
+                        isFirst
+                          ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
+                          : isLast
+                          ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
+                          : 'px-4 sm:px-4.5'
+                      } ${
+                        isHighlighted
+                          ? 'text-white font-serif font-black tracking-tight'
+                          : 'text-[#444655] hover:text-[#1B1B1E] font-serif font-bold'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
             {/* Right Status & Controls for Teacher */}
             <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {/* Peach Live Room Badge */}
               <div
-                className="h-[38px] flex items-center gap-2 px-3 rounded-full bg-[#FFE3C8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] select-none cursor-default text-[10px] font-black uppercase text-[#1B1B1E] font-serif"
+                className="hidden lg:flex h-[38px] items-center gap-2 px-3 rounded-full bg-[#FFE3C8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] select-none cursor-default text-[10px] font-black uppercase text-[#1B1B1E] font-serif"
                 title={backendOnline ? 'FILKOM UB Live Room — Backend Online (port 8000)' : 'FILKOM UB Live Room — Offline Demo Mode'}
               >
                 <span
@@ -754,8 +640,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>FILKOM UB • LIVE ROOM</span>
               </div>
 
+              {/* Mobile Drawer Button for Teacher on small screens */}
+              <button
+                type="button"
+                aria-label={isTeacherMobileNavOpen ? 'Tutup navigasi dosen' : 'Buka navigasi dosen'}
+                aria-expanded={isTeacherMobileNavOpen}
+                aria-controls="teacher-mobile-navigation"
+                onClick={() => setIsTeacherMobileNavOpen((open) => !open)}
+                className="min-[900px]:hidden h-[38px] w-[38px] flex items-center justify-center rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] cursor-pointer"
+              >
+                {isTeacherMobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              </button>
+
               {/* Dosen Role Switcher Pill */}
-              <div className="flex items-center p-1 rounded-full bg-[#EDE8F5] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs">
+              <div className="flex items-center p-1 rounded-full bg-[#EDE8F5] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs h-[38px]">
                 <button
                   type="button"
                   onClick={() => onTabChange('teacher')}
@@ -772,41 +670,132 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               </div>
 
-              {/* Teacher Profile Avatar */}
+              {/* Tactile Teacher Profile Pill (Matching Student Profile Pill) */}
               <div className="relative" ref={profileMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-[38px] h-[38px] rounded-full bg-[#FFDDB8] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] flex items-center justify-center text-[#2A1700] font-serif font-black text-xs cursor-pointer hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
-                  title="Akun Dosen FILKOM UB"
+                  className="h-[38px] flex items-center gap-2.5 pl-1.5 pr-3.5 rounded-full bg-white hover:bg-slate-50 border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer select-none"
+                  title="Profil Dosen"
                 >
-                  {getInitials(activeTeacherName)}
+                  <div className="w-7 h-7 rounded-full bg-[#FFDDB8] text-[#2A1700] flex items-center justify-center font-serif font-black text-xs border border-[#1B1B1E]">
+                    HT
+                  </div>
+                  <div className="hidden sm:flex flex-col text-left leading-tight">
+                    <span className="text-xs font-bold text-[#1B1B1E]">Dr. Eng. Herman Tolle</span>
+                    <span className="text-[9.5px] font-mono text-[#71717A]">Dosen &bull; FILKOM UB</span>
+                  </div>
                 </button>
 
                 {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white border-2 border-[#1B1B1E] rounded-xl shadow-[4px_4px_0px_#1B1B1E] p-3 z-50">
-                    <div className="flex items-center gap-2.5 pb-2.5 border-b border-[#1B1B1E]/15">
-                      <div className="w-8 h-8 rounded-full bg-[#FFDDB8] text-[#2A1700] flex items-center justify-center font-bold text-xs border border-[#1B1B1E]">
-                        {getInitials(activeTeacherName)}
+                  <div className="absolute right-0 mt-2 w-72 bg-white border-2 border-[#1B1B1E] rounded-2xl shadow-[5px_5px_0px_#1B1B1E] p-3.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    {/* Header Profile Card */}
+                    <div className="flex items-center gap-3 pb-3 border-b-2 border-[#1B1B1E]/10">
+                      <div className="w-10 h-10 rounded-full bg-[#FFDDB8] text-[#2A1700] flex items-center justify-center font-serif font-black text-sm border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
+                        HT
                       </div>
-                      <div>
-                        <p className="text-xs font-bold text-[#1B1B1E] leading-tight">{activeTeacherName}</p>
-                        <p className="text-[10px] text-neutral-500">{activeTeacherNip}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-serif font-black text-[#1B1B1E] truncate leading-tight">
+                          Dr. Eng. Herman Tolle
+                        </p>
+                        <p className="text-[10px] font-mono text-[#555] font-semibold mt-0.5">
+                          NIP: 197405232000031001
+                        </p>
+                        <span className="inline-block px-1.5 py-0.2 rounded bg-[#FFE3C8] border border-[#FFB95F] text-[9px] font-mono font-bold text-[#6D4400] mt-1">
+                          Dosen Pengampu &bull; FILKOM UB
+                        </span>
                       </div>
                     </div>
-                    <div className="pt-2 text-xs text-neutral-700 space-y-1">
-                      <p className="font-semibold text-[11px] text-[#0038D1]">Arsitektur Komputer B</p>
+
+                    {/* Navigation Links inside Menu */}
+                    <div className="py-2.5 space-y-1 text-xs">
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onTabChange('teacher');
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#F4F4F6] font-bold text-[#1B1B1E] flex items-center gap-2 cursor-pointer"
+                      >
+                        <GraduationCap className="w-3.5 h-3.5 text-[#0038D1]" />
+                        <span>AI Map Builder (Dosen)</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onTabChange('analytics');
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#F4F4F6] font-bold text-[#1B1B1E] flex items-center gap-2 cursor-pointer"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-[#0038D1]" />
+                        <span>Class Analytics & Gaps</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onTabChange('student');
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#F4F4F6] font-bold text-[#0038D1] flex items-center gap-2 cursor-pointer"
+                      >
+                        <School className="w-3.5 h-3.5 text-[#0038D1]" />
+                        <span>Lihat Portal Mahasiswa</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          onTabChange('onboarding');
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-[#F4F4F6] font-medium text-[#4B5563] flex items-center gap-2 cursor-pointer"
+                      >
+                        <School className="w-3.5 h-3.5 text-[#71717A]" />
+                        <span>Halaman Utama Kampus</span>
+                      </button>
+                    </div>
+
+                    {/* Logout Divider & Button */}
+                    <div className="pt-2 border-t border-[#1B1B1E]/10">
                       <button
                         onClick={handleLogoutAction}
-                        className="w-full text-left font-bold text-[11px] text-[#B61722] hover:underline pt-1 cursor-pointer"
+                        className="w-full text-left px-2.5 py-1.5 rounded-lg bg-[#FEF2F2] hover:bg-[#FEE2E2] font-serif font-black text-xs text-[#DC2626] flex items-center gap-2 border border-[#FCA5A5] cursor-pointer transition-colors"
                       >
-                        Ganti Akun / Keluar
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Keluar dari Akun Dosen</span>
                       </button>
                     </div>
                   </div>
                 )}
               </div>
             </div>
+            {isTeacherMobileNavOpen && (
+              <nav
+                id="teacher-mobile-navigation"
+                aria-label="Navigasi dosen"
+                className="absolute left-0 right-0 top-full z-50 border-b-2 border-[#1B1B1E] bg-[#FAF7F2] px-3 py-2 shadow-[0_4px_10px_rgba(27,27,30,0.08)] min-[900px]:hidden"
+              >
+                <div className="mx-auto flex max-w-7xl flex-col gap-1">
+                  {TEACHER_NAV_ITEMS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-current={currentTab === item.id ? 'page' : undefined}
+                      onClick={() => {
+                        onTabChange(item.id);
+                        setIsTeacherMobileNavOpen(false);
+                      }}
+                      className={`rounded-lg px-3 py-2 text-left text-sm font-serif font-bold ${
+                        currentTab === item.id
+                          ? 'bg-[#0038D1] text-white'
+                          : 'text-[#444655] hover:bg-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            )}
           </>
         )}
       </div>

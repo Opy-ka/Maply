@@ -62,9 +62,7 @@ function DesignIcon({ name, className = '' }: { name: AssetName; className?: str
 interface TeacherDashboardViewProps {
   masterMap: MasterConceptMap;
   assessmentConfig: AssessmentConfig;
-  assessments?: AssessmentConfig[];
   analytics: ClassKnowledgeGapSummary;
-  currentUser?: { id: string; email: string; full_name: string; role: string; identifier?: string } | null;
   onOpenMap: () => void;
   onOpenCourses: () => void;
   onOpenAssessments: () => void;
@@ -74,7 +72,39 @@ interface TeacherDashboardViewProps {
   onLogout: () => void;
 }
 
+const SUBMISSIONS = [
+  { initials: 'AR', name: 'Ahmad Rizky', nim: 'NIM 225150201111048', score: 82, status: 'Optimal', tone: 'blue', time: '12 mnt lalu' },
+  { initials: 'CD', name: 'Citra Dewi', nim: 'NIM 225150201111203', score: 94, status: 'Sangat Baik', tone: 'amber', time: '34 mnt lalu' },
+  { initials: 'BS', name: 'Budi Santoso', nim: 'NIM 225150201111082', score: 64, status: 'Perlu Remedial', tone: 'red', time: '1 jam lalu' },
+  { initials: 'NP', name: 'Nabila Putri', nim: 'NIM 225150201111115', score: 78, status: 'Lulus Standar', tone: 'gray', time: '2 jam lalu' }
+] as const;
 
+const MASTER_MAPS = [
+  {
+    course: 'Arsitektur Komputer',
+    revision: 'Rev. 3 • 2024',
+    title: 'CPU & Memory Hierarchy Architecture',
+    description: 'Model acuan interkoneksi ALU, Control Unit, Register Bank, Cache L1-L3, hingga Main Memory (RAM) bus.',
+    nodes: 14,
+    edges: 17
+  },
+  {
+    course: 'Sistem Operasi',
+    revision: 'Rev. 2 • 2025',
+    title: 'Virtual Memory Paging & TLB Hit/Miss',
+    description: 'Struktur hierarki memori, Page Table Walk, Process Buffer, dan virtual address translation.',
+    nodes: 11,
+    edges: 15
+  },
+  {
+    course: 'Jaringan Komputer',
+    revision: 'Rev. 1 • 2025',
+    title: 'OSI Layer Protocol Encapsulation',
+    description: 'Model pemetaan paket data: Application (Payload) hingga Physical Bit Stream pada ethernet & IP routing.',
+    nodes: 16,
+    edges: 12
+  }
+];
 
 const FREE_FEATURES = [
   { icon: 'included', text: <>100% Kontrol Pedagogis: <span className="font-normal">Rancang manual konsep & relasi bebas</span></> },
@@ -95,9 +125,7 @@ const PRO_FEATURES = [
 export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   masterMap,
   assessmentConfig,
-  assessments = [],
   analytics,
-  currentUser,
   onOpenMap,
   onOpenCourses,
   onOpenAssessments,
@@ -107,11 +135,6 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onLogout
 }) => {
   const [activeNav, setActiveNav] = useState<InstructorNavItem>('Dashboard');
-  const totalSubmissions = analytics.total_students ?? analytics.total_submissions ?? 0;
-  const passingRate = analytics.passing_rate ?? (totalSubmissions > 0 ? Math.round((analytics.average_score / 100) * 100) : 0);
-  const problematic = analytics.problematic_relationships || [];
-  const teacherName = currentUser?.full_name || 'Bapak/Ibu Dosen';
-  const totalCourses = Math.max(1, new Set(assessments.map((a) => a.description || 'Arsitektur Komputer')).size);
 
   const navigate = (label: InstructorNavItem) => {
     setActiveNav(label);
@@ -130,149 +153,135 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#1b1b1e]">
-      <InstructorNavbar activeItem={activeNav} currentUser={currentUser} onNavigate={navigate} onLogout={onLogout} />
+      <InstructorNavbar activeItem={activeNav} onNavigate={navigate} onLogout={onLogout} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-6 sm:px-8">
-        <section className="relative flex flex-col justify-between gap-7 overflow-hidden rounded-2xl bg-white p-6 shadow-[4px_4px_0_#1b1b1e] sm:p-10 lg:flex-row lg:items-center">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-64 w-64 rounded-full bg-[#f6f2f7] opacity-60" />
-          <div className="pointer-events-none absolute -bottom-16 right-28 h-48 w-48 rotate-12 rounded-2xl bg-[rgba(255,221,184,0.3)]" />
+        {/* Hero Section */}
+        <section className="relative flex flex-col justify-between gap-7 overflow-hidden rounded-2xl bg-white p-6 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E] sm:p-9 lg:flex-row lg:items-center">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-8 h-64 w-64 rounded-full bg-[#FAF7F2] border border-[#1B1B1E]/10" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-28 h-48 w-48 rotate-12 rounded-2xl bg-[#FFE3C8]/40 border border-[#1B1B1E]/10" />
           <div className="relative max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#f0edf1] px-4 py-1 text-[9px] font-bold uppercase tracking-[0.45px]">
-              <span className="h-2 w-2 rounded-full bg-[#0038d1]" />
-              FILKOM UNIVERSITAS BRAWIJAYA &bull; PORTAL DOSEN
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#1B1B1E] bg-[#EDE8F5] px-3.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-[0.45px] text-[#1B1B1E] shadow-[1px_1px_0_#1B1B1E]">
+              <span className="h-2 w-2 rounded-full bg-[#0038D1]" />
+              LAB SISTEM KOMPUTER • SEMESTER GANJIL 2026/2027
             </span>
-            <h1 className="mt-3 font-serif text-3xl font-bold leading-tight tracking-[-0.8px] sm:text-[40px]">
-              Selamat Datang, <span className="text-[#0038d1] underline decoration-wavy decoration-[#ffb95f]">{teacherName}</span> 👋
+            <h1 className="mt-3 font-serif text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-[#1B1B1E]">
+              Selamat Datang, <span className="text-[#0038D1] underline decoration-[#FFB95F] decoration-wavy decoration-2">Pak Herman</span> 👋
             </h1>
-            <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#444655]">
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#444655]">
               Pantau dinamika kognitif dan struktur pemahaman mahasiswa secara deterministik tanpa tebakan AI.
               Evaluasi proposisi berbasis grafik Kit-Build secara langsung.
             </p>
           </div>
-          <div className="relative flex flex-wrap gap-2 lg:justify-end">
+          <div className="relative flex flex-wrap gap-2.5 lg:justify-end">
             <button
               type="button"
               onClick={onOpenWizard}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0038d1] px-4 py-3 text-[11px] font-bold text-white shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0038D1] px-4 py-2.5 text-xs font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-[#2F54EB] transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="newAssessment" /> + Buat Asesmen Baru
             </button>
             <button
               type="button"
               onClick={onOpenMap}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-[11px] font-bold shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-serif font-black text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-[#FAF7F2] transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="map" /> Peta Konsep Acuan
             </button>
             <button
               type="button"
               onClick={onOpenAiDraft}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#eae7eb] px-4 py-3 text-[11px] font-bold shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#FAF7F2] px-4 py-2.5 text-xs font-serif font-black text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-white transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="lesson" /> Bahan Ajar (AI Draft)
             </button>
           </div>
         </section>
 
-        <section id="teacher-courses" aria-label="Ringkasan kelas dan asesmen" className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+        {/* Metric Summary Cards */}
+        <section id="teacher-courses" aria-label="Ringkasan kelas dan asesmen" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="TOTAL MATAKULIAH" icon="courses" iconTone="blue">
-            <strong className="font-serif text-[28px] leading-9">{totalCourses} Kelas Aktif</strong>
-            <span className="text-[12px] leading-5 text-[#444655]">{assessmentConfig.description || 'Arsitektur Komputer'}</span>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#0038d1]">
-              FILKOM Universitas Brawijaya
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">4 Kelas Aktif</strong>
+            <span className="text-xs leading-relaxed text-[#444655]">Arsitektur Komputer, SO, Alpro II, Jarkom</span>
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#0038D1]/30 bg-[#EEF2FF] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#0038D1]">
+              168 Total Mahasiswa Terdaftar
             </span>
           </MetricCard>
+
           <MetricCard title="ASESMEN KIT-BUILD" icon="assessments" iconTone="amber">
-            <strong className="font-serif text-[28px] leading-9">{assessments.length || 1} Asesmen Aktif</strong>
-            <div className="flex items-center gap-2 text-[9px] font-bold">
-              <span className="text-[#0038d1]">Token: {assessmentConfig.exam_token || 'KBT-CPU1'}</span>
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">14 Asesmen</strong>
+            <div className="flex items-center gap-2 text-[10px] font-mono font-bold">
+              <span className="text-[#0038D1]">● 4 Aktif</span>
+              <span className="text-[#71717A]">•</span>
+              <span className="text-[#71717A]">● 8 Selesai</span>
             </div>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#6d4400]">
-              Status: Live Room
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#D97706]/30 bg-[#FFFBEB] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#92400E]">
+              2 Draf Siap Rilis
             </span>
           </MetricCard>
+
           <MetricCard title="PARTISIPASI SESI" icon="participation" iconTone="red">
-            <strong className="font-serif text-[28px] leading-9">
-              {totalSubmissions} Mahasiswa
-            </strong>
-            <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-[#eae7eb]">
-              <div
-                className="h-full rounded-full bg-[#da3437] transition-all duration-500"
-                style={{ width: totalSubmissions > 0 ? `${Math.min(100, totalSubmissions * 20)}%` : '0%' }}
-              />
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">142 / 168</strong>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full border border-[#1B1B1E] bg-[#FAF7F2]">
+              <div className="h-full w-[84.5%] rounded-full bg-[#DA3437]" />
             </div>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#da3437]">
-              {totalSubmissions > 0 ? `${totalSubmissions} Mahasiswa Telah Mengumpulkan` : 'Belum Ada Mahasiswa Mengumpulkan'}
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#DA3437]/30 bg-[#FEF2F2] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#DA3437]">
+              84.5% Mahasiswa Mengerjakan
             </span>
           </MetricCard>
+
           <MetricCard title="TINGKAT PENYELESAIAN" icon="completion" iconTone="gray">
-            <strong className="font-serif text-[28px] leading-9">
-              {totalSubmissions > 0 ? `${passingRate}%` : '0%'}
-            </strong>
-            <span className="text-[12px] leading-5 text-[#444655]">
-              Rata-rata Skor: {totalSubmissions > 0 ? analytics.average_score : 0}/100
-            </span>
-            <button type="button" onClick={onOpenAnalytics} className="mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#0038d1] cursor-pointer">
-              <DesignIcon name="metricLink" /> Lihat Analitik Lengkap
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">91.2%</strong>
+            <span className="text-xs leading-relaxed text-[#444655]">Skor Kognitif: {analytics.average_score}/100</span>
+            <button
+              type="button"
+              onClick={onOpenAnalytics}
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#1B1B1E] bg-[#FAF7F2] hover:bg-white px-2.5 py-1 text-[9.5px] font-serif font-black text-[#0038D1] shadow-[1px_1px_0_#1B1B1E] transition-all cursor-pointer"
+            >
+              <DesignIcon name="metricLink" /> Lihat tren kelas &rarr;
             </button>
           </MetricCard>
         </section>
 
-        <section aria-label="Aktivitas asesmen terbaru" className="rounded-2xl bg-white p-4 shadow-[4px_4px_0_#1b1b1e] sm:p-6">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.45px]">
-              <span className={`h-2.5 w-2.5 rounded-full ${totalSubmissions > 0 ? 'bg-[#059669]' : 'bg-[#71717A]'}`} />
-              {totalSubmissions > 0 ? 'SEDANG BERLANGSUNG' : 'SESI TERBUKA — MENUNGGU PENGUMPULAN'}
+        {/* Live Attention Section */}
+        <section aria-label="Aktivitas asesmen terbaru" className="rounded-2xl bg-white p-5 sm:p-7 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1B1B1E]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#DA3437] animate-pulse" />
+              SEDANG BERLANGSUNG &amp; PERLU ATENSI DOSEN
             </div>
-            <span className="rounded-full bg-[#f6f2f7] px-3 py-1 text-[9px] font-bold text-[#444655]">
-              <span className="mr-1 text-[#0038d1]">◉</span> Status: {totalSubmissions} Mahasiswa Selesai
+            <span className="rounded-full border border-[#1B1B1E] bg-[#FAF7F2] px-3 py-1 text-[9.5px] font-mono font-bold text-[#1B1B1E]">
+              <span className="mr-1 text-[#0038D1]">◉</span> Status: Hari ini, 10:30 WIB
             </span>
           </div>
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[#0038d1] px-2 py-1 text-[8px] font-bold uppercase text-white">FILKOM</span>
-                <span className="text-[10px] text-[#747687]">{assessmentConfig.description || 'Kelas Dosen'}</span>
+                <span className="rounded-full bg-[#0038d1] px-2 py-1 text-[8px] font-bold uppercase text-white">TIF-2101</span>
+                <span className="text-[10px] text-[#747687]">Arsitektur Komputer • Kelas B</span>
               </div>
               <h2 className="font-serif text-xl font-bold leading-7">
-                Asesmen: {assessmentConfig.title}
+                Asesmen #01: {assessmentConfig.title}
               </h2>
               <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-[#444655]">
-                <span>{totalSubmissions} Mahasiswa Selesai</span>
+                <span>38 / 42 Mahasiswa Selesai (90.4%)</span>
                 <span>•</span>
-                <span>Metode: Closed Kit ({masterMap.nodes.length} Konsep, {masterMap.edges.length} Proposisi)</span>
+                <span><span className="text-[#ffb95f]">●</span> Metode: Closed Kit (14 Nodes, 17 Links)</span>
               </div>
-
-              {totalSubmissions === 0 ? (
-                <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#F0EDF1] p-3 text-[11px] leading-5 text-[#444655]">
-                  <div className="min-w-0 flex-1 break-words">
-                    <strong className="block text-[#1b1b1e]">Belum Ada Pengumpulan Peta Konsep</strong>
-                    Sesi asesmen saat ini belum memiliki pengumpulan dari mahasiswa. Analisis miskonsepsi proposisi otomatis aktif begitu tugas pertama dikumpulkan.
-                  </div>
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-[rgba(255,218,215,0.3)] p-3 text-[11px] leading-5 text-[#444655]">
+                <DesignIcon name="warning" className="mt-0.5" />
+                <div className="min-w-0 flex-1 break-words">
+                  <strong className="block text-[#1b1b1e]">Deteksi 1 Celah Kognitif Kritis (Misconception Detected)</strong>
+                  Sebanyak <strong>18 Mahasiswa</strong> keliru menghubungkan proposisi langsung dari <b>[ALU]</b> ke <b>[Memory]</b>,
+                  melewati stage krusial <span className="font-bold text-[#b61722]">[Register Internal]</span>.
                 </div>
-              ) : problematic.length > 0 ? (
-                <div className="mt-4 flex items-start gap-2 rounded-xl bg-[rgba(255,218,215,0.3)] p-3 text-[11px] leading-5 text-[#444655]">
-                  <DesignIcon name="warning" className="mt-0.5" />
-                  <div className="min-w-0 flex-1 break-words">
-                    <strong className="block text-[#1b1b1e]">Deteksi Celah Kognitif (Misconception Detected)</strong>
-                    Sebanyak <strong>{problematic[0].error_percentage}% Mahasiswa</strong> keliru menghubungkan proposisi{' '}
-                    <b>[{problematic[0].source}]</b> &rarr; <b>[{problematic[0].target}]</b> ({problematic[0].label}).
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#E6F4EA] p-3 text-[11px] leading-5 text-[#137333]">
-                  <div className="min-w-0 flex-1 break-words">
-                    <strong className="block text-[#137333]">Pemahaman Konsep Sangat Baik</strong>
-                    Tidak ada miskonsepsi struktural dominan yang terdeteksi pada seluruh pengumpulan saat ini.
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
             <div className="flex shrink-0 flex-col gap-2 lg:w-[190px]">
-              <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0038d1] px-4 py-3 text-[10px] font-bold text-white shadow-[3px_3px_0_#1b1b1e] cursor-pointer">
+              <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0038d1] px-4 py-3 text-[10px] font-bold text-white shadow-[3px_3px_0_#1b1b1e]">
                 <DesignIcon name="assessmentAction" /> Buka Analisis Kelas
               </button>
-              <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-[10px] font-bold text-[#b61722] shadow-[2px_2px_0_#1b1b1e] cursor-pointer">
+              <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-[10px] font-bold text-[#b61722] shadow-[2px_2px_0_#1b1b1e]">
                 <DesignIcon name="mapAction" /> Lihat Knowledge Gap
               </button>
             </div>
@@ -290,77 +299,50 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               </button>
             </div>
             <div className="overflow-hidden rounded-2xl bg-white shadow-[3px_3px_0_#1b1b1e]">
-              {!analytics.student_performances || analytics.student_performances.length === 0 ? (
-                <div className="p-8 text-center bg-white space-y-2">
-                  <div className="w-10 h-10 rounded-xl bg-[#F0EDF1] border-2 border-[#1B1B1E] mx-auto flex items-center justify-center">
-                    <DesignIcon name="activity" />
-                  </div>
-                  <p className="font-serif font-black text-sm text-[#1B1B1E]">Belum Ada Aktivitas Submission</p>
-                  <p className="text-xs text-[#71717A] max-w-sm mx-auto">
-                    Belum ada mahasiswa yang mengumpulkan asesmen ini. Mahasiswa dapat memasukkan token ujian untuk mulai mengerjakan di kanvas.
-                  </p>
-                </div>
-              ) : (
-                (analytics.student_performances || []).map((perf: { student_id: string; student_name: string; total_score: number; status?: string }) => {
-                  const initials = perf.student_name
-                    ? perf.student_name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase()
-                    : 'M';
-                  const isRemedial = perf.total_score < 75;
-                  return (
-                    <button
-                      key={perf.student_id}
-                      type="button"
-                      onClick={onOpenAnalytics}
-                      className="flex w-full items-center justify-between gap-3 border-b border-[#f0edf1] px-4 py-3 text-left last:border-b-0 hover:bg-[#fbf8fc] sm:px-5 cursor-pointer"
-                    >
-                      <span className="flex min-w-0 items-start gap-3">
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-bold ${
-                          isRemedial ? 'bg-[#ffdad7] text-[#b61722]' : 'bg-[#dee1ff] text-[#0038d1]'
-                        }`}>
-                          {initials}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <strong className="text-[10px]">{perf.student_name}</strong>
-                            <span className="inline-flex items-center gap-1 text-[8px] text-[#747687]">
-                              <DesignIcon name="studentActivity" /> ID: {perf.student_id}
-                            </span>
-                          </span>
-                          <span className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[9px] text-[#444655]">
-                            Arsitektur Komputer <span>•</span>
-                            <span className="rounded bg-[#f0edf1] px-1.5 py-0.5">Kit-Build Concept Map</span>
-                          </span>
-                          {isRemedial && (
-                            <span className="mt-1 flex items-center gap-1 text-[8px] font-bold text-[#b61722]">
-                              <DesignIcon name="remedial" /> Perlu Remedial
-                            </span>
-                          )}
-                        </span>
+              {SUBMISSIONS.map((submission) => (
+                <button
+                  key={submission.initials}
+                  type="button"
+                  onClick={onOpenAnalytics}
+                  className="flex w-full items-center justify-between gap-3 border-b border-[#f0edf1] px-4 py-3 text-left last:border-b-0 hover:bg-[#fbf8fc] sm:px-5"
+                >
+                  <span className="flex min-w-0 items-start gap-3">
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-bold ${
+                      submission.tone === 'blue' ? 'bg-[#dee1ff] text-[#0038d1]' :
+                      submission.tone === 'amber' ? 'bg-[#ffddb8] text-[#6d4400]' :
+                      submission.tone === 'red' ? 'bg-[#ffdad7] text-[#b61722]' : 'bg-[#eae7eb] text-[#444655]'
+                    }`}>{submission.initials}</span>
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <strong className="text-[10px]">{submission.name}</strong>
+                        <span className="inline-flex items-center gap-1 text-[8px] text-[#747687]"><DesignIcon name="studentActivity" />{submission.nim}</span>
                       </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <span className="text-right">
-                          <strong className={`inline-flex items-center justify-end gap-1 font-serif text-lg ${isRemedial ? 'text-[#b61722]' : 'text-[#0038d1]'}`}>
-                            <DesignIcon name="score" />{perf.total_score}<span className="text-[9px] font-normal text-[#444655]"> / 100</span>
-                          </strong>
-                          <span className={`block text-[8px] ${isRemedial ? 'text-[#b61722]' : 'text-[#747687]'}`}>
-                            {perf.status || (isRemedial ? 'Perlu Remedial' : 'Lulus Standar')}
-                          </span>
-                        </span>
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f6f2f7]">
-                          <DesignIcon name="chevron" />
-                        </span>
+                      <span className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[9px] text-[#444655]">
+                        Arsitektur Komputer <span>•</span>
+                        <span className="rounded bg-[#f0edf1] px-1.5 py-0.5">Net Structure</span>
+                        <span>•</span>{submission.time}
                       </span>
-                    </button>
-                  );
-                })
-              )}
-              {totalSubmissions > 0 && (
-                <div className="border-t border-[#eae7eb] p-3 text-center">
-                  <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center gap-2 text-[10px] font-bold text-[#0038d1] cursor-pointer">
-                    Lihat Seluruh {totalSubmissions} Hasil Submission <DesignIcon name="externalLink" />
-                  </button>
-                </div>
-              )}
+                      {submission.tone === 'red' && (
+                        <span className="mt-1 flex items-center gap-1 text-[8px] font-bold text-[#b61722]">
+                          <DesignIcon name="remedial" /> Perlu Remedial [ALU → Register]
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-right">
+                      <strong className={`inline-flex items-center justify-end gap-1 font-serif text-lg ${submission.tone === 'red' ? 'text-[#b61722]' : 'text-[#0038d1]'}`}><DesignIcon name="score" />{submission.score}<span className="text-[9px] font-normal text-[#444655]"> / 100</span></strong>
+                      <span className={`block text-[8px] ${submission.tone === 'red' ? 'text-[#b61722]' : 'text-[#747687]'}`}>{submission.status}</span>
+                    </span>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f6f2f7]"><DesignIcon name="chevron" /></span>
+                  </span>
+                </button>
+              ))}
+              <div className="border-t border-[#eae7eb] p-3 text-center">
+                <button type="button" onClick={onOpenAnalytics} className="inline-flex items-center gap-2 text-[10px] font-bold text-[#0038d1]">
+                  Lihat Seluruh 142 Hasil Submission <DesignIcon name="externalLink" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -369,27 +351,29 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               <h2 className="flex items-center gap-2 font-serif text-xl font-bold tracking-[-0.3px]">
                 <span className="h-3 w-3 rounded-full bg-[#ffb95f]" /> Peta Konsep Acuan (Master)
               </h2>
-              <span className="shrink-0 text-[9px] font-bold text-[#747687]">1 Master Map Aktif</span>
+              <span className="shrink-0 text-[9px] font-bold text-[#747687]">3 Map Tersedia</span>
             </div>
-            <article className="rounded-2xl bg-white p-4 shadow-[3px_3px_0_#1b1b1e] sm:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="rounded-full bg-[#dee1ff] px-2 py-1 text-[8px] font-bold text-[#0038d1]">● {masterMap.course_id || 'Arsitektur Komputer'}</span>
-                <span className="text-[8px] font-bold text-[#059669]">Status: {masterMap.status || 'approved'}</span>
-              </div>
-              <h3 className="mt-2 font-serif text-lg font-bold leading-6">
-                {masterMap.title}
-              </h3>
-              <p className="mt-1 text-[10px] leading-5 text-[#444655]">{masterMap.description || 'Peta acuan konsep untuk evaluasi Kit-Build.'}</p>
-              <div className="mt-2 flex items-center justify-between border-t border-[#eae7eb] pt-2">
-                <div className="flex items-center gap-3 text-[8px] font-bold">
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#0038d1]" />{masterMap.nodes.length} Node</span>
-                  <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#b61722]" />{masterMap.edges.length} Relasi</span>
+            {MASTER_MAPS.map((map, index) => (
+              <article key={map.title} className="rounded-2xl bg-white p-4 shadow-[3px_3px_0_#1b1b1e] sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-full bg-[#dee1ff] px-2 py-1 text-[8px] font-bold text-[#0038d1]">● {map.course}</span>
+                  <span className="text-[8px] font-bold text-[#747687]">{map.revision}</span>
                 </div>
-                <button type="button" onClick={onOpenMap} className="inline-flex items-center gap-1 text-[8px] font-bold text-[#0038d1] cursor-pointer">
-                  Buka Kanvas <DesignIcon name="mapLink" />
-                </button>
-              </div>
-            </article>
+                <h3 className="mt-2 font-serif text-lg font-bold leading-6">
+                  {index === 0 ? (masterMap.title.includes('CPU') ? masterMap.title : map.title) : map.title}
+                </h3>
+                <p className="mt-1 text-[10px] leading-5 text-[#444655]">{index === 0 ? (masterMap.description || map.description) : map.description}</p>
+                <div className="mt-2 flex items-center justify-between border-t border-[#eae7eb] pt-2">
+                  <div className="flex items-center gap-3 text-[8px] font-bold">
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#0038d1]" />{index === 0 ? masterMap.nodes.length : map.nodes} Node</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[#b61722]" />{index === 0 ? masterMap.edges.length : map.edges} Relasi</span>
+                  </div>
+                  <button type="button" onClick={onOpenMap} className="inline-flex items-center gap-1 text-[8px] font-bold text-[#0038d1]">
+                    Buka Kanvas <DesignIcon name={index === 0 ? 'mapLink' : 'metricLink'} />
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -474,17 +458,19 @@ function MetricCard({
   children: React.ReactNode;
 }) {
   const toneClasses = {
-    blue: 'bg-[#dee1ff]',
-    amber: 'bg-[#ffddb8]',
-    red: 'bg-[#ffdad7]',
-    gray: 'bg-[#eae7eb]'
+    blue: 'bg-[#EEF2FF] border-[#0038D1]',
+    amber: 'bg-[#FFFBEB] border-[#D97706]',
+    red: 'bg-[#FEF2F2] border-[#DA3437]',
+    gray: 'bg-[#EDE8F5] border-[#1B1B1E]'
   };
 
   return (
-    <article className="flex min-h-[178px] flex-col justify-between gap-3 rounded-2xl bg-white p-5 shadow-[3px_3px_0_#1b1b1e] sm:p-6">
+    <article className="flex min-h-[178px] flex-col justify-between gap-3 rounded-2xl bg-white p-5 border-2 border-[#1B1B1E] shadow-[3px_3px_0_#1B1B1E] sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[9px] font-bold uppercase tracking-[0.45px] text-[#444655]">{title}</span>
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${toneClasses[iconTone]}`}><DesignIcon name={icon} /></span>
+        <span className="text-[9.5px] font-mono font-bold uppercase tracking-[0.45px] text-[#71717A]">{title}</span>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-xl border ${toneClasses[iconTone]} shadow-[1px_1px_0_#1B1B1E]`}>
+          <DesignIcon name={icon} />
+        </span>
       </div>
       <div className="flex flex-col gap-1">{children}</div>
     </article>
@@ -511,39 +497,39 @@ function LicenseCard({
   const isPro = kind === 'pro';
 
   return (
-    <article className={`flex flex-col rounded-2xl bg-white p-6 shadow-[3px_3px_0_#1b1b1e] ${isPro ? 'border-t-4 border-[#0038d1]' : ''}`}>
+    <article className={`flex flex-col rounded-2xl bg-white p-6 sm:p-8 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E] ${isPro ? 'ring-2 ring-[#0038D1]' : ''}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="rounded-full bg-[#eae7eb] px-2 py-1 text-[8px] font-bold uppercase tracking-[0.35px]">
+        <span className="rounded-full border border-[#1B1B1E] bg-[#FAF7F2] px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-[0.35px] text-[#1B1B1E]">
           {isPro ? '✦ AI Augmented Pro' : '◉ Edu Free Tier (Aktif)'}
         </span>
-        <span className={`rounded-full px-2 py-1 text-[8px] font-bold ${isPro ? 'bg-[#ffddb8] text-[#6d4400]' : 'text-[#747687]'}`}>
+        <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-mono font-bold ${isPro ? 'bg-[#FFE3C8] text-[#6D4400] border-[#FFB95F]' : 'border-[#1B1B1E] text-[#71717A]'}`}>
           {isPro ? 'AKSELERASI AI' : 'Standar FILKOM'}
         </span>
       </div>
-      <div className="mt-3">
-        <h3 className={`font-serif text-[40px] font-bold leading-[48px] ${isPro ? 'text-[#0038d1]' : ''}`}>{title}</h3>
-        <strong className="mt-2 block text-[12px]">{subtitle}</strong>
-        <p className="mt-1 text-[10px] leading-5 text-[#444655]">{description}</p>
+      <div className="mt-4">
+        <h3 className={`font-serif text-3xl sm:text-4xl font-black leading-tight ${isPro ? 'text-[#0038D1]' : 'text-[#1B1B1E]'}`}>{title}</h3>
+        <strong className="mt-2 block font-serif text-sm font-bold text-[#1B1B1E]">{subtitle}</strong>
+        <p className="mt-1 text-xs leading-relaxed text-[#444655]">{description}</p>
       </div>
-      <div className="my-4 border-t border-[#eae7eb]" />
-      <ul className="flex-1 space-y-2.5 pb-5">
+      <div className="my-5 border-t-2 border-[#1B1B1E]/10" />
+      <ul className="flex-1 space-y-2.5 pb-6">
         {features.map((feature, index) => (
-          <li key={`${kind}-${index}`} className="flex items-start gap-2 text-[10px] leading-5">
-            <DesignIcon name={feature.icon} className="mt-0.5" />
-            <span>{feature.text}</span>
+          <li key={`${kind}-${index}`} className="flex items-start gap-2.5 text-xs text-[#1B1B1E]">
+            <DesignIcon name={feature.icon} className="mt-0.5 shrink-0" />
+            <span className="leading-snug">{feature.text}</span>
           </li>
         ))}
       </ul>
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[10px] font-bold transition-transform hover:-translate-y-px ${
-          isPro ? 'bg-[#0038d1] text-white shadow-[3px_3px_0_#1b1b1e]' : 'bg-[#eae7eb] text-[#444655]'
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-serif font-black border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] transition-all hover:-translate-y-px active:translate-y-0 cursor-pointer ${
+          isPro ? 'bg-[#0038D1] text-white hover:bg-[#2F54EB]' : 'bg-[#FAF7F2] text-[#1B1B1E] hover:bg-white'
         }`}
       >
         {buttonLabel}
         {isPro && <DesignIcon name="trial" />}
-        {!isPro && <ChevronRight className="h-3 w-3" />}
+        {!isPro && <ChevronRight className="h-4 w-4" />}
       </button>
     </article>
   );
