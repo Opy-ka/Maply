@@ -11,10 +11,17 @@ import {
   AuthResponse
 } from '../types/maply';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.API_URL ||
-  'http://localhost:8000/api/v1';
+export function getApiBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+  // If running in browser and domain is NOT localhost (e.g. *.vercel.app), default to Render backend
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return 'https://maply-api-39cp.onrender.com/api/v1';
+  }
+  return (envUrl || 'http://localhost:8000/api/v1').replace(/\/+$/, '');
+}
 
 export const INITIAL_MASTER_MAP: MasterConceptMap = {
   id: 'map-cpu-1',
@@ -104,7 +111,7 @@ function getAuthHeaders(): HeadersInit {
 
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const root = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+    const root = getApiBaseUrl().replace(/\/api\/v1\/?$/, '');
     const res = await fetch(`${root}/health`, { cache: 'no-store' });
     return res.ok;
   } catch {
@@ -132,7 +139,7 @@ export async function registerUser(payload: {
   role: 'student' | 'teacher';
   identifier?: string;
 }): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
+  const res = await fetch(`${getApiBaseUrl()}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -145,7 +152,7 @@ export async function registerUser(payload: {
 }
 
 export async function loginUser(payload: { email: string; password: string }): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE_URL}/auth/login`, {
+  const res = await fetch(`${getApiBaseUrl()}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -161,7 +168,7 @@ export async function fetchCurrentUser(): Promise<User | null> {
   const token = getStoredToken();
   if (!token) return null;
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const res = await fetch(`${getApiBaseUrl()}/auth/me`, {
       headers: getAuthHeaders(),
       cache: 'no-store'
     });
@@ -182,7 +189,7 @@ export async function fetchCurrentUser(): Promise<User | null> {
 
 export async function fetchAssessmentsList(): Promise<AssessmentConfig[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/assessments`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, fallback assessments list:', err);
@@ -192,7 +199,7 @@ export async function fetchAssessmentsList(): Promise<AssessmentConfig[]> {
 
 export async function fetchAssessment(asmId: string = 'asm-1'): Promise<AssessmentConfig> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/assessments/${asmId}`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, using initial assessment config:', err);
@@ -201,7 +208,7 @@ export async function fetchAssessment(asmId: string = 'asm-1'): Promise<Assessme
 }
 
 export async function updateAssessment(config: AssessmentConfig): Promise<AssessmentConfig> {
-  const res = await fetch(`${API_BASE_URL}/assessments/${config.id}`, {
+  const res = await fetch(`${getApiBaseUrl()}/assessments/${config.id}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(config)
@@ -212,7 +219,7 @@ export async function updateAssessment(config: AssessmentConfig): Promise<Assess
 
 export async function verifyExamToken(token: string): Promise<{ valid: boolean; assessment?: AssessmentConfig; message: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/verify-token`, {
+    const res = await fetch(`${getApiBaseUrl()}/assessments/verify-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: token.trim().toUpperCase() })
@@ -228,7 +235,7 @@ export async function verifyExamToken(token: string): Promise<{ valid: boolean; 
 }
 
 export async function saveMasterMap(map: MasterConceptMap): Promise<MasterConceptMap> {
-  const res = await fetch(`${API_BASE_URL}/maps/master`, {
+  const res = await fetch(`${getApiBaseUrl()}/maps/master`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(map)
@@ -239,7 +246,7 @@ export async function saveMasterMap(map: MasterConceptMap): Promise<MasterConcep
 
 export async function fetchMasterMapsList(): Promise<MasterConceptMap[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/maps/master`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/maps/master`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, fallback master maps list:', err);
@@ -249,7 +256,7 @@ export async function fetchMasterMapsList(): Promise<MasterConceptMap[]> {
 
 export async function fetchMasterMap(mapId: string = 'map-cpu-1'): Promise<MasterConceptMap> {
   try {
-    const res = await fetch(`${API_BASE_URL}/maps/master/${mapId}`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/maps/master/${mapId}`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, using initial data:', err);
@@ -259,7 +266,7 @@ export async function fetchMasterMap(mapId: string = 'map-cpu-1'): Promise<Maste
 
 export async function fetchAssessmentKit(asmId: string = 'asm-1'): Promise<ConceptKit> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/kit`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/assessments/${asmId}/kit`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend unavailable, generating client fallback kit:', err);
@@ -282,7 +289,7 @@ export async function submitStudentMap(
   const effectiveId = studentId || activeUser?.id || ('mhs-' + Math.floor(Math.random() * 900 + 100));
   const effectiveName = studentName || activeUser?.full_name || 'Mahasiswa';
 
-  const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/submit`, {
+  const res = await fetch(`${getApiBaseUrl()}/assessments/${asmId}/submit`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({
@@ -301,7 +308,7 @@ export async function fetchMySubmissions(studentId?: string): Promise<Evaluation
   try {
     const activeUser = getStoredUser();
     const id = studentId || activeUser?.id;
-    const url = id ? `${API_BASE_URL}/students/my-submissions?student_id=${encodeURIComponent(id)}` : `${API_BASE_URL}/students/my-submissions`;
+    const url = id ? `${getApiBaseUrl()}/students/my-submissions?student_id=${encodeURIComponent(id)}` : `${getApiBaseUrl()}/students/my-submissions`;
     const res = await fetch(url, {
       headers: getAuthHeaders(),
       cache: 'no-store'
@@ -315,7 +322,7 @@ export async function fetchMySubmissions(studentId?: string): Promise<Evaluation
 
 export async function fetchClassAnalytics(asmId: string = 'asm-1'): Promise<ClassKnowledgeGapSummary> {
   try {
-    const res = await fetch(`${API_BASE_URL}/assessments/${asmId}/analytics`, { cache: 'no-store' });
+    const res = await fetch(`${getApiBaseUrl()}/assessments/${asmId}/analytics`, { cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch (err) {
     console.warn('Backend analytics unavailable:', err);
@@ -339,7 +346,7 @@ export async function fetchClassAnalytics(asmId: string = 'asm-1'): Promise<Clas
 }
 
 export async function generateAIDraft(topic: string, materialText: string): Promise<AIDraftResponse> {
-  const res = await fetch(`${API_BASE_URL}/ai/draft`, {
+  const res = await fetch(`${getApiBaseUrl()}/ai/draft`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify({ topic, material_text: materialText, target_node_count: 6 })
