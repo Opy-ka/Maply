@@ -156,84 +156,102 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       <InstructorNavbar activeItem={activeNav} onNavigate={navigate} onLogout={onLogout} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-6 sm:px-8">
-        <section className="relative flex flex-col justify-between gap-7 overflow-hidden rounded-2xl bg-white p-6 shadow-[4px_4px_0_#1b1b1e] sm:p-10 lg:flex-row lg:items-center">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-64 w-64 rounded-full bg-[#f6f2f7] opacity-60" />
-          <div className="pointer-events-none absolute -bottom-16 right-28 h-48 w-48 rotate-12 rounded-2xl bg-[rgba(255,221,184,0.3)]" />
+        {/* Hero Section */}
+        <section className="relative flex flex-col justify-between gap-7 overflow-hidden rounded-2xl bg-white p-6 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E] sm:p-9 lg:flex-row lg:items-center">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-8 h-64 w-64 rounded-full bg-[#FAF7F2] border border-[#1B1B1E]/10" />
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-16 right-28 h-48 w-48 rotate-12 rounded-2xl bg-[#FFE3C8]/40 border border-[#1B1B1E]/10" />
           <div className="relative max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#f0edf1] px-4 py-1 text-[9px] font-bold uppercase tracking-[0.45px]">
-              <span className="h-2 w-2 rounded-full bg-[#0038d1]" />
-              LAB SISTEM KOMPUTER • SEMESTER GANJIL 2024/2025
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#1B1B1E] bg-[#EDE8F5] px-3.5 py-1 text-[9.5px] font-mono font-bold uppercase tracking-[0.45px] text-[#1B1B1E] shadow-[1px_1px_0_#1B1B1E]">
+              <span className="h-2 w-2 rounded-full bg-[#0038D1]" />
+              LAB SISTEM KOMPUTER • SEMESTER GANJIL 2026/2027
             </span>
-            <h1 className="mt-3 font-serif text-3xl font-bold leading-tight tracking-[-0.8px] sm:text-[40px]">
-              Selamat Datang, <span className="text-[#0038d1] underline decoration-wavy decoration-[#ffb95f]">Pak Herman</span> 👋
+            <h1 className="mt-3 font-serif text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-[#1B1B1E]">
+              Selamat Datang, <span className="text-[#0038D1] underline decoration-[#FFB95F] decoration-wavy decoration-2">Pak Herman</span> 👋
             </h1>
-            <p className="mt-2 max-w-xl text-[13px] leading-6 text-[#444655]">
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#444655]">
               Pantau dinamika kognitif dan struktur pemahaman mahasiswa secara deterministik tanpa tebakan AI.
               Evaluasi proposisi berbasis grafik Kit-Build secara langsung.
             </p>
           </div>
-          <div className="relative flex flex-wrap gap-2 lg:justify-end">
+          <div className="relative flex flex-wrap gap-2.5 lg:justify-end">
             <button
               type="button"
               onClick={onOpenWizard}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#0038d1] px-4 py-3 text-[11px] font-bold text-white shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#0038D1] px-4 py-2.5 text-xs font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-[#2F54EB] transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="newAssessment" /> + Buat Asesmen Baru
             </button>
             <button
               type="button"
               onClick={onOpenMap}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-[11px] font-bold shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-serif font-black text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-[#FAF7F2] transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="map" /> Peta Konsep Acuan
             </button>
             <button
               type="button"
               onClick={onOpenAiDraft}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#eae7eb] px-4 py-3 text-[11px] font-bold shadow-[3px_3px_0_#1b1b1e] transition-transform hover:-translate-y-px"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#FAF7F2] px-4 py-2.5 text-xs font-serif font-black text-[#1B1B1E] border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] hover:bg-white transition-transform hover:-translate-y-px cursor-pointer"
             >
               <DesignIcon name="lesson" /> Bahan Ajar (AI Draft)
             </button>
           </div>
         </section>
 
-        <section id="teacher-courses" aria-label="Ringkasan kelas dan asesmen" className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+        {/* Metric Summary Cards */}
+        <section id="teacher-courses" aria-label="Ringkasan kelas dan asesmen" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="TOTAL MATAKULIAH" icon="courses" iconTone="blue">
-            <strong className="font-serif text-[28px] leading-9">4 Kelas Aktif</strong>
-            <span className="text-[12px] leading-5 text-[#444655]">Arsitektur Komputer, SO, Alpro II, Jarkom</span>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#0038d1]">168 Total Mahasiswa Terdaftar</span>
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">4 Kelas Aktif</strong>
+            <span className="text-xs leading-relaxed text-[#444655]">Arsitektur Komputer, SO, Alpro II, Jarkom</span>
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#0038D1]/30 bg-[#EEF2FF] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#0038D1]">
+              168 Total Mahasiswa Terdaftar
+            </span>
           </MetricCard>
+
           <MetricCard title="ASESMEN KIT-BUILD" icon="assessments" iconTone="amber">
-            <strong className="font-serif text-[28px] leading-9">14 Asesmen</strong>
-            <div className="flex items-center gap-2 text-[9px] font-bold">
-              <span className="text-[#0038d1]">● 4 Aktif</span><span className="text-[#c4c5d8]">•</span><span className="text-[#747687]">● 8 Selesai</span>
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">14 Asesmen</strong>
+            <div className="flex items-center gap-2 text-[10px] font-mono font-bold">
+              <span className="text-[#0038D1]">● 4 Aktif</span>
+              <span className="text-[#71717A]">•</span>
+              <span className="text-[#71717A]">● 8 Selesai</span>
             </div>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#6d4400]">2 Draf Siap Rilis</span>
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#D97706]/30 bg-[#FFFBEB] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#92400E]">
+              2 Draf Siap Rilis
+            </span>
           </MetricCard>
+
           <MetricCard title="PARTISIPASI SESI" icon="participation" iconTone="red">
-            <strong className="font-serif text-[28px] leading-9">142 / 168</strong>
-            <div className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-[#eae7eb]">
-              <div className="h-full w-[84.5%] rounded-full bg-[#da3437]" />
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">142 / 168</strong>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full border border-[#1B1B1E] bg-[#FAF7F2]">
+              <div className="h-full w-[84.5%] rounded-full bg-[#DA3437]" />
             </div>
-            <span className="mt-1 inline-flex w-fit rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#da3437]">84.5% Mahasiswa Mengerjakan</span>
+            <span className="mt-1 inline-flex w-fit rounded-lg border border-[#DA3437]/30 bg-[#FEF2F2] px-2.5 py-1 text-[9.5px] font-mono font-bold text-[#DA3437]">
+              84.5% Mahasiswa Mengerjakan
+            </span>
           </MetricCard>
+
           <MetricCard title="TINGKAT PENYELESAIAN" icon="completion" iconTone="gray">
-            <strong className="font-serif text-[28px] leading-9">91.2%</strong>
-            <span className="text-[12px] leading-5 text-[#444655]">Skor Kognitif Kelas: {analytics.average_score}/100</span>
-            <button type="button" onClick={onOpenAnalytics} className="mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-[#f6f2f7] px-2 py-1.5 text-[9px] font-bold text-[#0038d1]">
-              <DesignIcon name="metricLink" /> Lihat tren kelas
+            <strong className="font-serif text-2xl sm:text-3xl font-black text-[#1B1B1E]">91.2%</strong>
+            <span className="text-xs leading-relaxed text-[#444655]">Skor Kognitif: {analytics.average_score}/100</span>
+            <button
+              type="button"
+              onClick={onOpenAnalytics}
+              className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg border border-[#1B1B1E] bg-[#FAF7F2] hover:bg-white px-2.5 py-1 text-[9.5px] font-serif font-black text-[#0038D1] shadow-[1px_1px_0_#1B1B1E] transition-all cursor-pointer"
+            >
+              <DesignIcon name="metricLink" /> Lihat tren kelas &rarr;
             </button>
           </MetricCard>
         </section>
 
-        <section aria-label="Aktivitas asesmen terbaru" className="rounded-2xl bg-white p-4 shadow-[4px_4px_0_#1b1b1e] sm:p-6">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.45px]">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#b61722]" />
+        {/* Live Attention Section */}
+        <section aria-label="Aktivitas asesmen terbaru" className="rounded-2xl bg-white p-5 sm:p-7 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-[#1B1B1E]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#DA3437] animate-pulse" />
               SEDANG BERLANGSUNG &amp; PERLU ATENSI DOSEN
             </div>
-            <span className="rounded-full bg-[#f6f2f7] px-3 py-1 text-[9px] font-bold text-[#444655]">
-              <span className="mr-1 text-[#0038d1]">◉</span> Status Kelas: Hari ini, 10:30 WIB
+            <span className="rounded-full border border-[#1B1B1E] bg-[#FAF7F2] px-3 py-1 text-[9.5px] font-mono font-bold text-[#1B1B1E]">
+              <span className="mr-1 text-[#0038D1]">◉</span> Status: Hari ini, 10:30 WIB
             </span>
           </div>
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -440,17 +458,19 @@ function MetricCard({
   children: React.ReactNode;
 }) {
   const toneClasses = {
-    blue: 'bg-[#dee1ff]',
-    amber: 'bg-[#ffddb8]',
-    red: 'bg-[#ffdad7]',
-    gray: 'bg-[#eae7eb]'
+    blue: 'bg-[#EEF2FF] border-[#0038D1]',
+    amber: 'bg-[#FFFBEB] border-[#D97706]',
+    red: 'bg-[#FEF2F2] border-[#DA3437]',
+    gray: 'bg-[#EDE8F5] border-[#1B1B1E]'
   };
 
   return (
-    <article className="flex min-h-[178px] flex-col justify-between gap-3 rounded-2xl bg-white p-5 shadow-[3px_3px_0_#1b1b1e] sm:p-6">
+    <article className="flex min-h-[178px] flex-col justify-between gap-3 rounded-2xl bg-white p-5 border-2 border-[#1B1B1E] shadow-[3px_3px_0_#1B1B1E] sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[9px] font-bold uppercase tracking-[0.45px] text-[#444655]">{title}</span>
-        <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${toneClasses[iconTone]}`}><DesignIcon name={icon} /></span>
+        <span className="text-[9.5px] font-mono font-bold uppercase tracking-[0.45px] text-[#71717A]">{title}</span>
+        <span className={`flex h-8 w-8 items-center justify-center rounded-xl border ${toneClasses[iconTone]} shadow-[1px_1px_0_#1B1B1E]`}>
+          <DesignIcon name={icon} />
+        </span>
       </div>
       <div className="flex flex-col gap-1">{children}</div>
     </article>
@@ -477,39 +497,39 @@ function LicenseCard({
   const isPro = kind === 'pro';
 
   return (
-    <article className={`flex flex-col rounded-2xl bg-white p-6 shadow-[3px_3px_0_#1b1b1e] ${isPro ? 'border-t-4 border-[#0038d1]' : ''}`}>
+    <article className={`flex flex-col rounded-2xl bg-white p-6 sm:p-8 border-2 border-[#1B1B1E] shadow-[4px_4px_0_#1B1B1E] ${isPro ? 'ring-2 ring-[#0038D1]' : ''}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="rounded-full bg-[#eae7eb] px-2 py-1 text-[8px] font-bold uppercase tracking-[0.35px]">
+        <span className="rounded-full border border-[#1B1B1E] bg-[#FAF7F2] px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-[0.35px] text-[#1B1B1E]">
           {isPro ? '✦ AI Augmented Pro' : '◉ Edu Free Tier (Aktif)'}
         </span>
-        <span className={`rounded-full px-2 py-1 text-[8px] font-bold ${isPro ? 'bg-[#ffddb8] text-[#6d4400]' : 'text-[#747687]'}`}>
+        <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-mono font-bold ${isPro ? 'bg-[#FFE3C8] text-[#6D4400] border-[#FFB95F]' : 'border-[#1B1B1E] text-[#71717A]'}`}>
           {isPro ? 'AKSELERASI AI' : 'Standar FILKOM'}
         </span>
       </div>
-      <div className="mt-3">
-        <h3 className={`font-serif text-[40px] font-bold leading-[48px] ${isPro ? 'text-[#0038d1]' : ''}`}>{title}</h3>
-        <strong className="mt-2 block text-[12px]">{subtitle}</strong>
-        <p className="mt-1 text-[10px] leading-5 text-[#444655]">{description}</p>
+      <div className="mt-4">
+        <h3 className={`font-serif text-3xl sm:text-4xl font-black leading-tight ${isPro ? 'text-[#0038D1]' : 'text-[#1B1B1E]'}`}>{title}</h3>
+        <strong className="mt-2 block font-serif text-sm font-bold text-[#1B1B1E]">{subtitle}</strong>
+        <p className="mt-1 text-xs leading-relaxed text-[#444655]">{description}</p>
       </div>
-      <div className="my-4 border-t border-[#eae7eb]" />
-      <ul className="flex-1 space-y-2.5 pb-5">
+      <div className="my-5 border-t-2 border-[#1B1B1E]/10" />
+      <ul className="flex-1 space-y-2.5 pb-6">
         {features.map((feature, index) => (
-          <li key={`${kind}-${index}`} className="flex items-start gap-2 text-[10px] leading-5">
-            <DesignIcon name={feature.icon} className="mt-0.5" />
-            <span>{feature.text}</span>
+          <li key={`${kind}-${index}`} className="flex items-start gap-2.5 text-xs text-[#1B1B1E]">
+            <DesignIcon name={feature.icon} className="mt-0.5 shrink-0" />
+            <span className="leading-snug">{feature.text}</span>
           </li>
         ))}
       </ul>
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-[10px] font-bold transition-transform hover:-translate-y-px ${
-          isPro ? 'bg-[#0038d1] text-white shadow-[3px_3px_0_#1b1b1e]' : 'bg-[#eae7eb] text-[#444655]'
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-serif font-black border-2 border-[#1B1B1E] shadow-[2.5px_2.5px_0_#1B1B1E] transition-all hover:-translate-y-px active:translate-y-0 cursor-pointer ${
+          isPro ? 'bg-[#0038D1] text-white hover:bg-[#2F54EB]' : 'bg-[#FAF7F2] text-[#1B1B1E] hover:bg-white'
         }`}
       >
         {buttonLabel}
         {isPro && <DesignIcon name="trial" />}
-        {!isPro && <ChevronRight className="h-3 w-3" />}
+        {!isPro && <ChevronRight className="h-4 w-4" />}
       </button>
     </article>
   );
