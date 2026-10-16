@@ -5,6 +5,7 @@ import { Navbar, ActiveTab } from '../components/Navbar';
 import { OnboardingView } from '../components/OnboardingView';
 import { StudentView } from '../components/StudentView';
 import { StudentDashboardView } from '../components/StudentDashboardView';
+import { StudentAssessmentsView } from '../components/StudentAssessmentsView';
 import { StudentEvaluationView } from '../components/StudentEvaluationView';
 import { TeacherView } from '../components/TeacherView';
 import { AnalyticsView } from '../components/AnalyticsView';
@@ -33,7 +34,7 @@ export default function Home() {
   const [mapVersion, setMapVersion] = useState(0);
   const [analytics, setAnalytics] = useState<ClassKnowledgeGapSummary | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
-  const [studentSubView, setStudentSubView] = useState<'dashboard' | 'workspace' | 'evaluation'>('dashboard');
+  const [studentSubView, setStudentSubView] = useState<'dashboard' | 'assessments' | 'workspace' | 'evaluation'>('dashboard');
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,6 +74,12 @@ export default function Home() {
     setActiveExamToken(token);
     setAssessmentConfig(newConfig);
     showToast(`🚀 Asesmen berhasil diterbitkan! Token Mahasiswa: ${token}`);
+  };
+
+  const handleLogout = () => {
+    setCurrentTab('onboarding');
+    setStudentSubView('dashboard');
+    showToast('✓ Anda telah berhasil keluar dari akun');
   };
 
   const refreshKitAndAnalytics = useCallback(async (asmId: string) => {
@@ -244,6 +251,19 @@ export default function Home() {
       <Navbar
         currentTab={currentTab}
         onTabChange={setCurrentTab}
+        studentSubView={studentSubView}
+        onStudentSubViewChange={(sub) => {
+          if (sub === 'evaluation' && !evaluationResult) {
+            setEvaluationResult(sampleEvaluationResult);
+          }
+          setStudentSubView(sub);
+        }}
+        activeExamToken={activeExamToken}
+        assessmentTitle={assessmentConfig.title}
+        courseName="FILKOM UB • Arsitektur Komputer"
+        studentName="Ahmad Rizky"
+        studentNim="225150201111048"
+        onLogout={handleLogout}
         backendOnline={backendOnline}
         onOpenAuthModal={handleOpenAuth}
       />
@@ -272,6 +292,18 @@ export default function Home() {
                 kit={kit}
                 onStartWorkspace={() => setStudentSubView('workspace')}
                 onEnterToken={(tok) => handleEnterExamWithToken(tok)}
+                onViewResults={() => {
+                  if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                  setStudentSubView('evaluation');
+                }}
+              />
+            )}
+
+            {studentSubView === 'assessments' && (
+              <StudentAssessmentsView
+                assessmentConfig={assessmentConfig}
+                kit={kit}
+                onStartWorkspace={() => setStudentSubView('workspace')}
                 onViewResults={() => {
                   if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
                   setStudentSubView('evaluation');
@@ -314,8 +346,10 @@ export default function Home() {
         {currentTab === 'analytics' && <AnalyticsView analytics={analytics} />}
       </div>
 
-      {/* Cognitive Evaluation Modal */}
-      <EvaluationModal result={evaluationResult} onClose={() => setEvaluationResult(null)} />
+      {/* Cognitive Evaluation Modal (Only for non-student views or quick triggers) */}
+      {currentTab !== 'student' && (
+        <EvaluationModal result={evaluationResult} onClose={() => setEvaluationResult(null)} />
+      )}
 
       {/* Multi-Role & Token Access Gateway Modal */}
       <AuthModal

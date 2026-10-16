@@ -99,7 +99,7 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
             </div>
 
             <div className="py-2">
-              <div className="text-6xl sm:text-7xl font-serif font-black text-[#0038D1] tracking-tight">
+              <div className="text-6xl sm:text-7xl font-sans font-black text-[#0038D1] tracking-tight tabular-nums">
                 {result.total_score}
               </div>
               <span className="text-xs font-mono font-bold text-[#4B5563]">Skala 0 &ndash; 100</span>
@@ -126,7 +126,7 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
                   <span className="text-[10.5px] font-mono font-bold uppercase text-[#71717A] block">
                     01 &bull; Presensi Konsep
                   </span>
-                  <div className="text-3xl font-serif font-black text-[#1B1B1E]">
+                  <div className="text-3xl font-sans font-black text-[#1B1B1E] tracking-tight tabular-nums">
                     {result.concept_recognition_score}%
                   </div>
                   <p className="text-[11px] text-[#555]">
@@ -150,7 +150,7 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
                   <span className="text-[10.5px] font-mono font-bold uppercase text-[#71717A] block">
                     02 &bull; Akurasi Proposisi
                   </span>
-                  <div className="text-3xl font-serif font-black text-[#059669]">
+                  <div className="text-3xl font-sans font-black text-[#059669] tracking-tight tabular-nums">
                     {result.relationship_accuracy_score}%
                   </div>
                   <p className="text-[11px] text-[#555]">
@@ -174,7 +174,7 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
                   <span className="text-[10.5px] font-mono font-bold uppercase text-[#71717A] block">
                     03 &bull; Harmoni Topologi
                   </span>
-                  <div className="text-3xl font-serif font-black text-[#2F54EB]">
+                  <div className="text-3xl font-sans font-black text-[#2F54EB] tracking-tight tabular-nums">
                     {result.structural_understanding_score}%
                   </div>
                   <p className="text-[11px] text-[#555]">
@@ -205,40 +205,230 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">True Positive (TP)</span>
-                  <span className="font-serif font-black text-sm text-[#059669]">
+                  <span className="font-mono font-black text-sm text-[#059669]">
                     {result.metrics?.true_positive ?? 0}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">False Positive (FP)</span>
-                  <span className="font-serif font-black text-sm text-[#B91C1C]">
+                  <span className="font-mono font-black text-sm text-[#B91C1C]">
                     {result.metrics?.false_positive ?? 0}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">False Negative (FN)</span>
-                  <span className="font-serif font-black text-sm text-[#D97706]">
+                  <span className="font-mono font-black text-sm text-[#D97706]">
                     {result.metrics?.false_negative ?? 0}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">Precision</span>
-                  <span className="font-serif font-black text-sm text-[#1B1B1E]">
+                  <span className="font-mono font-black text-sm text-[#1B1B1E]">
                     {result.metrics?.precision ?? 0}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">Recall</span>
-                  <span className="font-serif font-black text-sm text-[#1B1B1E]">
+                  <span className="font-mono font-black text-sm text-[#1B1B1E]">
                     {result.metrics?.recall ?? 0}
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-[#FAF7F2] border border-[#1B1B1E]">
                   <span className="text-[9.5px] font-mono font-bold text-[#71717A] block">F1-Score</span>
-                  <span className="font-serif font-black text-sm text-[#0038D1]">
+                  <span className="font-mono font-black text-sm text-[#0038D1]">
                     {result.metrics?.f1_score ?? 0}
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 2.5: SIDE-BY-SIDE VISUAL GRAPH COMPARISON (Figma Frame 3 #46:872 & Frame 5 #46:2372) */}
+        <div className="p-6 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b-2 border-[#FAF7F2]">
+            <div className="space-y-0.5">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#DEE1FF] border border-[#0038D1] text-[10px] font-mono font-bold text-[#001257]">
+                <GitCompare className="w-3 h-3 text-[#0038D1]" />
+                KOMPARASI VISUAL TOPOLOGI GRAF
+              </div>
+              <h3 className="text-lg font-serif font-black text-[#1B1B1E]">
+                Peta Rekonstruksi Anda vs Master Kit Dosen (Gold Standard)
+              </h3>
+            </div>
+            {/* Visual Legend */}
+            <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F0FDF4] border border-[#059669] text-[#065F46]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
+                Valid (TP)
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FEF2F2] border border-[#DC2626] text-[#991B1B]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#DC2626]"></span>
+                Miskonsepsi (FP)
+              </span>
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFFBEB] border border-[#D97706] text-[#92400E]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] border border-dashed border-[#1B1B1E]"></span>
+                Terlewat (FN)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Graph: Student's Reconstruction */}
+            <div className="p-4 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-serif font-black text-[#1B1B1E] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#0038D1]"></span>
+                  Peta Rekonstruksi Mahasiswa
+                </span>
+                <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-[#1B1B1E] text-[#1B1B1E]">
+                  Akurasi: {result.relationship_accuracy_score}%
+                </span>
+              </div>
+
+              {/* Graphical Canvas Render */}
+              <div className="relative w-full h-72 bg-white rounded-lg border-2 border-[#1B1B1E] overflow-hidden p-3 flex flex-col justify-between">
+                {/* SVG Graph Visualization */}
+                <svg className="w-full h-full" viewBox="0 0 420 230">
+                  <defs>
+                    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 9 5 L 0 9 z" fill="#059669" />
+                    </marker>
+                    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 9 5 L 0 9 z" fill="#DC2626" />
+                    </marker>
+                    <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 9 5 L 0 9 z" fill="#D97706" />
+                    </marker>
+                  </defs>
+
+                  {/* Edges */}
+                  {/* CPU to ALU (TP) */}
+                  <line x1="210" y1="40" x2="100" y2="110" stroke="#059669" strokeWidth="2.5" markerEnd="url(#arrow-green)" />
+                  <rect x="125" y="65" width="55" height="15" rx="3" fill="#ECFDF5" stroke="#059669" strokeWidth="1" />
+                  <text x="152" y="76" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#065F46">contains</text>
+
+                  {/* CPU to CU (TP) */}
+                  <line x1="210" y1="40" x2="320" y2="110" stroke="#059669" strokeWidth="2.5" markerEnd="url(#arrow-green)" />
+                  <rect x="245" y="65" width="55" height="15" rx="3" fill="#ECFDF5" stroke="#059669" strokeWidth="1" />
+                  <text x="272" y="76" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#065F46">contains</text>
+
+                  {/* ALU to Register (TP) */}
+                  <line x1="100" y1="130" x2="170" y2="190" stroke="#059669" strokeWidth="2.5" markerEnd="url(#arrow-green)" />
+                  <rect x="105" y="152" width="60" height="15" rx="3" fill="#ECFDF5" stroke="#059669" strokeWidth="1" />
+                  <text x="135" y="163" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#065F46">stores result</text>
+
+                  {/* CU to ALU (FN - Missing) */}
+                  <line x1="310" y1="120" x2="120" y2="120" stroke="#D97706" strokeWidth="2" strokeDasharray="4 4" markerEnd="url(#arrow-amber)" />
+                  <rect x="185" y="112" width="50" height="15" rx="3" fill="#FFFBEB" stroke="#D97706" strokeWidth="1" />
+                  <text x="210" y="123" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#92400E">controls</text>
+
+                  {/* CPU to Register (FP - Misconception) */}
+                  <path d="M 230 40 Q 280 120 210 185" fill="none" stroke="#DC2626" strokeWidth="2.5" markerEnd="url(#arrow-red)" />
+                  <rect x="240" y="130" width="55" height="15" rx="3" fill="#FEF2F2" stroke="#DC2626" strokeWidth="1" />
+                  <text x="267" y="141" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#991B1B">controls (FP)</text>
+
+                  {/* Nodes */}
+                  {/* CPU */}
+                  <g transform="translate(160, 20)">
+                    <rect width="100" height="32" rx="6" fill="#FFEAA7" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="50" y="20" textAnchor="middle" fontSize="11" fontWeight="900" fill="#1B1B1E">CPU</text>
+                  </g>
+
+                  {/* ALU */}
+                  <g transform="translate(50, 105)">
+                    <rect width="90" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="45" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">ALU</text>
+                  </g>
+
+                  {/* CU */}
+                  <g transform="translate(280, 105)">
+                    <rect width="90" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="45" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">Control Unit</text>
+                  </g>
+
+                  {/* Register */}
+                  <g transform="translate(150, 180)">
+                    <rect width="110" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="55" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">Register Bank</text>
+                  </g>
+                </svg>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#444655]">
+                <span>Status Graf: Rekonstruksi Parsial</span>
+                <span className="font-bold text-[#DC2626]">1 Miskonsepsi Terdeteksi</span>
+              </div>
+            </div>
+
+            {/* Right Graph: Lecturer's Master Kit (Gold Standard) */}
+            <div className="p-4 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-serif font-black text-[#1B1B1E] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#059669]"></span>
+                  Master Kit Dosen (Gold Standard Acuan)
+                </span>
+                <span className="text-[10px] font-mono bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#059669] text-[#065F46] font-bold">
+                  Target Ideal 100%
+                </span>
+              </div>
+
+              {/* Graphical Canvas Render */}
+              <div className="relative w-full h-72 bg-white rounded-lg border-2 border-[#1B1B1E] overflow-hidden p-3 flex flex-col justify-between">
+                <svg className="w-full h-full" viewBox="0 0 420 230">
+                  <defs>
+                    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 9 5 L 0 9 z" fill="#0038D1" />
+                    </marker>
+                  </defs>
+
+                  {/* Edges */}
+                  {/* CPU to ALU */}
+                  <line x1="210" y1="40" x2="100" y2="110" stroke="#0038D1" strokeWidth="2.5" markerEnd="url(#arrow-blue)" />
+                  <rect x="125" y="65" width="55" height="15" rx="3" fill="#EEF2FF" stroke="#0038D1" strokeWidth="1" />
+                  <text x="152" y="76" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0038D1">contains</text>
+
+                  {/* CPU to CU */}
+                  <line x1="210" y1="40" x2="320" y2="110" stroke="#0038D1" strokeWidth="2.5" markerEnd="url(#arrow-blue)" />
+                  <rect x="245" y="65" width="55" height="15" rx="3" fill="#EEF2FF" stroke="#0038D1" strokeWidth="1" />
+                  <text x="272" y="76" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0038D1">contains</text>
+
+                  {/* ALU to Register */}
+                  <line x1="100" y1="130" x2="170" y2="190" stroke="#0038D1" strokeWidth="2.5" markerEnd="url(#arrow-blue)" />
+                  <rect x="105" y="152" width="60" height="15" rx="3" fill="#EEF2FF" stroke="#0038D1" strokeWidth="1" />
+                  <text x="135" y="163" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#0038D1">stores result</text>
+
+                  {/* CU to ALU (Standard Correct Edge) */}
+                  <line x1="310" y1="120" x2="120" y2="120" stroke="#0038D1" strokeWidth="2.5" markerEnd="url(#arrow-blue)" />
+                  <rect x="185" y="112" width="50" height="15" rx="3" fill="#EEF2FF" stroke="#0038D1" strokeWidth="1" />
+                  <text x="210" y="123" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#0038D1">controls</text>
+
+                  {/* Nodes */}
+                  <g transform="translate(160, 20)">
+                    <rect width="100" height="32" rx="6" fill="#DEE1FF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="50" y="20" textAnchor="middle" fontSize="11" fontWeight="900" fill="#001257">CPU</text>
+                  </g>
+
+                  <g transform="translate(50, 105)">
+                    <rect width="90" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="45" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">ALU</text>
+                  </g>
+
+                  <g transform="translate(280, 105)">
+                    <rect width="90" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="45" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">Control Unit</text>
+                  </g>
+
+                  <g transform="translate(150, 180)">
+                    <rect width="110" height="30" rx="6" fill="#FFFFFF" stroke="#1B1B1E" strokeWidth="2" />
+                    <text x="55" y="19" textAnchor="middle" fontSize="10" fontWeight="800" fill="#1B1B1E">Register Bank</text>
+                  </g>
+                </svg>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono text-[#444655]">
+                <span>Hierarki Topologis: 3 Tingkat</span>
+                <span className="font-bold text-[#0038D1]">Struktur Kausalitas Baku</span>
               </div>
             </div>
           </div>
@@ -276,7 +466,7 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
                 Tabel Evaluasi Relasi Proposisi Mahasiswa vs Master Map
               </h3>
               <p className="text-xs text-[#555]">
-                Daftar lengkap triple konsep &lt;Subjek, Predikat, Objek&gt; dengan status keabsahan
+                Daftar lengkap triple konsep &lt;Subjek, Predikat, Objek&gt; dengan catatan verifikasi eksak
               </p>
             </div>
             <span className="px-3 py-1 rounded-full bg-[#FAF7F2] border border-[#1B1B1E] text-xs font-mono font-bold text-[#1B1B1E]">
@@ -306,7 +496,9 @@ export const StudentEvaluationView: React.FC<StudentEvaluationViewProps> = ({
                       <span className="px-2.5 py-1 rounded-lg bg-white border border-[#1B1B1E] text-[#1B1B1E] font-serif shadow-[1px_1px_0px_#1B1B1E]">
                         [{edge.source_label}]
                       </span>
-                      <span className="text-[#0038D1] font-mono font-bold text-xs">
+                      <span className={`font-mono font-bold text-xs ${
+                        isCorrect ? 'text-[#059669]' : isMissing ? 'text-[#D97706]' : 'text-[#DC2626]'
+                      }`}>
                         ── {edge.label} ──▶
                       </span>
                       <span className="px-2.5 py-1 rounded-lg bg-white border border-[#1B1B1E] text-[#1B1B1E] font-serif shadow-[1px_1px_0px_#1B1B1E]">
