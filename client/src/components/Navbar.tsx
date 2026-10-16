@@ -2,18 +2,14 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  User,
-  CheckCircle2,
   LogIn,
-  ArrowLeft,
   GraduationCap,
   Layers,
   Award,
-  Clock,
-  Sparkles,
   LogOut,
   School,
-  RotateCcw
+  Menu,
+  X,
 } from 'lucide-react';
 
 export type ActiveTab = 'onboarding' | 'teacher' | 'student' | 'analytics';
@@ -26,23 +22,20 @@ interface NavbarProps {
   onStudentSubViewChange?: (subView: StudentSubView) => void;
   backendOnline?: boolean;
   onOpenAuthModal?: (role?: 'student' | 'teacher') => void;
-  activeExamToken?: string | null;
-  assessmentTitle?: string;
-  courseName?: string;
   studentName?: string;
   studentNim?: string;
-  timeRemainingSeconds?: number;
   onLogout?: () => void;
 }
 
 interface StudentNavItem {
-  id: 'dashboard' | 'assessments' | 'evaluation';
+  id: 'dashboard' | 'assessments' | 'workspace' | 'evaluation';
   label: string;
 }
 
 const STUDENT_NAV_ITEMS: StudentNavItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'assessments', label: 'My Assessments' },
+  { id: 'workspace', label: 'Workspace' },
   { id: 'evaluation', label: 'Personal Results' }
 ];
 
@@ -63,15 +56,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onStudentSubViewChange,
   backendOnline = false,
   onOpenAuthModal,
-  activeExamToken = 'KBT-9428',
-  assessmentTitle = 'Arsitektur Komputer & Organisasi Sistem',
-  courseName = 'FILKOM UB • Arsitektur Komputer',
   studentName = 'Ahmad Rizky',
   studentNim = '225150201111048',
-  timeRemainingSeconds,
   onLogout
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isStudentMobileNavOpen, setIsStudentMobileNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Close profile dropdown when clicking outside
@@ -117,9 +107,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   // =========================================================================
   // HOVER & ACTIVE SLIDING PILL INDICATOR MECHANISM FOR STUDENT NAVBAR
   // =========================================================================
-  const [hoveredStudentTab, setHoveredStudentTab] = useState<'dashboard' | 'assessments' | 'evaluation' | null>(null);
+  const [hoveredStudentTab, setHoveredStudentTab] = useState<'dashboard' | 'assessments' | 'workspace' | 'evaluation' | null>(null);
   const studentNavRef = useRef<HTMLElement>(null);
-  const studentTabRefs = useRef<{ [key in 'dashboard' | 'assessments' | 'evaluation']?: HTMLButtonElement | null }>({});
+  const studentTabRefs = useRef<{ [key in 'dashboard' | 'assessments' | 'workspace' | 'evaluation']?: HTMLButtonElement | null }>({});
   const [studentIndicatorStyle, setStudentIndicatorStyle] = useState<{
     left: number;
     width: number;
@@ -132,12 +122,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     borderRadius: '0 9999px 9999px 0',
   });
 
-  const currentStudentKey: 'dashboard' | 'assessments' | 'evaluation' =
-    studentSubView === 'assessments' ? 'assessments' : studentSubView === 'evaluation' ? 'evaluation' : 'dashboard';
+  const currentStudentKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation' =
+    studentSubView;
 
-  const activeStudentTabKey: 'dashboard' | 'assessments' | 'evaluation' = hoveredStudentTab ?? currentStudentKey;
+  const activeStudentTabKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation' = hoveredStudentTab ?? currentStudentKey;
 
-  const updateStudentIndicator = useCallback((targetKey: 'dashboard' | 'assessments' | 'evaluation') => {
+  const updateStudentIndicator = useCallback((targetKey: 'dashboard' | 'assessments' | 'workspace' | 'evaluation') => {
     const navEl = studentNavRef.current;
     const targetEl = studentTabRefs.current[targetKey];
     if (navEl && targetEl) {
@@ -172,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   useEffect(() => {
-    if (isStudentSection && studentSubView !== 'workspace') {
+    if (isStudentSection) {
       updateStudentIndicator(activeStudentTabKey);
       const handleResize = () => updateStudentIndicator(activeStudentTabKey);
       window.addEventListener('resize', handleResize);
@@ -184,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   }, [activeStudentTabKey, updateStudentIndicator, isStudentSection, studentSubView]);
 
-  const handleStudentTabHover = (tabId: 'dashboard' | 'assessments' | 'evaluation') => {
+  const handleStudentTabHover = (tabId: 'dashboard' | 'assessments' | 'workspace' | 'evaluation') => {
     setHoveredStudentTab(tabId);
     updateStudentIndicator(tabId);
   };
@@ -270,7 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header
-      className={`sticky top-0 z-50 px-3 sm:px-6 py-2.5 transition-all duration-300 backdrop-blur-md ${
+      className={`sticky top-0 z-50 relative px-3 sm:px-6 py-2.5 transition-all duration-300 backdrop-blur-md ${
         isThickBorder
           ? 'border-b-2 border-[#1B1B1E] bg-[#FAF7F2]/95 shadow-[0_2px_10px_rgba(27,27,30,0.06)]'
           : 'border-b border-[#1B1B1E]/20 bg-[#FAF7F2]/80'
@@ -374,82 +364,95 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* ========================================================= */}
         {isStudentSection && (
           <>
-            {/* If inside active exam workspace: show focused exam banner with back button */}
+            {/* Workspace controls are in the workspace header; keep the primary app navigation here. */}
             {studentSubView === 'workspace' ? (
               <>
-                {/* Center: Exam Context Breadcrumb & Session Banner */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <nav
+                  ref={studentNavRef}
+                  onMouseLeave={handleStudentNavLeave}
+                  aria-label="Navigasi mahasiswa"
+                  className="relative hidden min-[900px]:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
+                >
+                  <div
+                    className="absolute -top-[2px] -bottom-[2px] left-0 bg-gradient-to-r from-[#0038D1] to-[#2F54EB] pointer-events-none transition-all duration-250 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+                    style={{
+                      transform: `translateX(${studentIndicatorStyle.left}px)`,
+                      width: `${studentIndicatorStyle.width}px`,
+                      borderRadius: studentIndicatorStyle.borderRadius,
+                      opacity: studentIndicatorStyle.opacity,
+                    }}
+                  />
+                  {STUDENT_NAV_ITEMS.map((item, idx) => {
+                    const isFirst = idx === 0;
+                    const isLast = idx === STUDENT_NAV_ITEMS.length - 1;
+                    const isHighlighted = activeStudentTabKey === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        ref={(el) => {
+                          studentTabRefs.current[item.id] = el;
+                        }}
+                        type="button"
+                        aria-current={studentSubView === item.id ? 'page' : undefined}
+                        onClick={() => handleStudentNav(item.id)}
+                        onMouseEnter={() => handleStudentTabHover(item.id)}
+                        className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
+                          isFirst
+                            ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
+                            : isLast
+                            ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
+                            : 'px-4 sm:px-4.5'
+                        } ${
+                          isHighlighted
+                            ? 'text-white font-serif font-black tracking-tight'
+                            : 'text-[#444655] hover:text-[#1B1B1E] font-serif font-bold'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handleStudentNav('dashboard')}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-[#F0ECE1] text-[#1B1B1E] font-serif font-bold text-xs border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
-                    title="Kembali ke Dashboard Mahasiswa"
+                    aria-label={isStudentMobileNavOpen ? 'Tutup navigasi mahasiswa' : 'Buka navigasi mahasiswa'}
+                    aria-expanded={isStudentMobileNavOpen}
+                    aria-controls="student-mobile-navigation"
+                    onClick={() => setIsStudentMobileNavOpen((open) => !open)}
+                    className="min-[900px]:hidden h-[38px] w-[38px] flex items-center justify-center rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]"
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Dashboard</span>
+                    {isStudentMobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                   </button>
-
-                  <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-xs">
-                    <span className="px-1.5 py-0.2 rounded bg-[#FFEAA7] border border-[#1B1B1E] text-[9.5px] font-mono font-black text-[#8E5900]">
-                      UB
-                    </span>
-                    <span className="font-bold text-[#1B1B1E] max-w-[200px] lg:max-w-xs truncate">
-                      {assessmentTitle}
-                    </span>
-                    <span className="px-1.5 py-0.2 rounded bg-[#EEF2FF] border border-[#0038D1] text-[9.5px] font-mono font-black text-[#0038D1]">
-                      {activeExamToken || 'KBT-9428'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: Live Exam Status & Student Badge */}
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  <div
-                    className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-[10.5px] font-mono font-bold text-[#065F46]"
-                    title="Penyimpanan otomatis aktif di background"
+                  <button
+                    type="button"
+                    onClick={handleLogoutAction}
+                    className="rounded-full bg-[#DA3437] px-3 py-1.5 text-[10px] font-serif font-black text-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] transition-transform hover:-translate-y-px"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />
-                    <span>Cloud Synced</span>
-                  </div>
-
-                  {/* Live Exam Countdown Timer */}
-                  {(() => {
-                    const secs = timeRemainingSeconds !== undefined ? timeRemainingSeconds : 2700;
-                    const mins = Math.floor(secs / 60);
-                    const remSecs = secs % 60;
-                    const formatted = `${mins.toString().padStart(2, '0')}:${remSecs.toString().padStart(2, '0')}`;
-                    const isUrgent = secs <= 300;
-
-                    return (
-                      <div
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border-2 text-xs font-mono font-black transition-colors ${
-                          isUrgent
-                            ? 'bg-[#FEF2F2] border-[#DC2626] text-[#DC2626] shadow-[1.5px_1.5px_0px_#DC2626] animate-pulse'
-                            : 'bg-[#FFEAA7] border-[#1B1B1E] text-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]'
-                        }`}
-                        title={isUrgent ? 'Peringatan: Waktu pengerjaan tersisa kurang dari 5 menit!' : 'Sisa waktu pengerjaan asesmen'}
-                      >
-                        <Clock className={`w-3.5 h-3.5 ${isUrgent ? 'text-[#DC2626]' : 'text-[#8E5900]'}`} />
-                        <span>{formatted} SISA</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Student Avatar */}
-                  <div className="w-8 h-8 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-xs border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
-                    AR
+                    Logout
+                  </button>
+                  <div className="flex h-[38px] items-center gap-2 rounded-full border-2 border-[#1B1B1E] bg-white pl-1.5 pr-2.5 shadow-[2px_2px_0px_#1B1B1E]">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1B1B1E] bg-[#0038D1] font-serif text-xs font-black text-white">
+                      AR
+                    </div>
+                    <div className="hidden sm:flex max-w-[150px] flex-col text-left leading-tight">
+                      <span className="truncate text-xs font-bold text-[#1B1B1E]">{studentName}</span>
+                      <span className="text-[9px] font-mono text-[#71717A]">NIM: {studentNim}</span>
+                    </div>
                   </div>
                 </div>
               </>
             ) : (
-              /* If in Dashboard, My Assessments, or Results: 3 perfectly balanced sections with uniform tab sizes */
+              /* Dashboard, My Assessments, Workspace, and Results share one navigation. */
               <>
                 {/* Center: Interactive Sliding Segmented Pill Nav with EQUAL TAB SIZES (Dashboard, My Assessments, Results) */}
                 <div className="flex items-center justify-center">
                   <nav
                     ref={studentNavRef}
                     onMouseLeave={handleStudentNavLeave}
-                    className="relative flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
+                    aria-label="Navigasi mahasiswa"
+                    className="relative hidden min-[900px]:flex items-center h-[38px] bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2.5px_2.5px_0px_#1B1B1E] p-0 overflow-hidden select-none"
                   >
                     {/* Seamless Blue Sliding Fill (Zero gap on curved ends via negative bleed & dynamic border radius) */}
                     <div
@@ -472,6 +475,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                           ref={(el) => {
                             studentTabRefs.current[item.id] = el;
                           }}
+                          type="button"
+                          aria-current={studentSubView === item.id ? 'page' : undefined}
                           onClick={() => handleStudentNav(item.id)}
                           onMouseEnter={() => handleStudentTabHover(item.id)}
                           className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
@@ -494,10 +499,27 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
 
                 {/* Right: Tactile Profile Pill & Dropdown (Course Badge Removed for Multi-Course Portfolio) */}
-                <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
                   {/* Tactile Profile Pill: Standardized h-[38px], border-2, shadow-[2px_2px_0px_#1B1B1E] */}
 
                   {/* Tactile Profile Pill: Standardized h-[38px], border-2, shadow-[2px_2px_0px_#1B1B1E] */}
+                  <button
+                    type="button"
+                    aria-label={isStudentMobileNavOpen ? 'Tutup navigasi mahasiswa' : 'Buka navigasi mahasiswa'}
+                    aria-expanded={isStudentMobileNavOpen}
+                    aria-controls="student-mobile-navigation"
+                    onClick={() => setIsStudentMobileNavOpen((open) => !open)}
+                    className="min-[900px]:hidden h-[38px] w-[38px] flex items-center justify-center rounded-full bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]"
+                  >
+                    {isStudentMobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLogoutAction}
+                    className="rounded-full border-2 border-[#1B1B1E] bg-[#DA3437] px-3 py-1.5 text-[10px] font-serif font-black text-white shadow-[2px_2px_0px_#1B1B1E] transition-transform hover:-translate-y-px"
+                  >
+                    Logout
+                  </button>
                   <div className="relative" ref={profileMenuRef}>
                     <button
                       type="button"
@@ -596,6 +618,34 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 </div>
               </>
+            )}
+            {isStudentMobileNavOpen && (
+              <nav
+                id="student-mobile-navigation"
+                aria-label="Navigasi mahasiswa"
+                className="absolute left-0 right-0 top-full z-50 border-b-2 border-[#1B1B1E] bg-[#FAF7F2] px-3 py-2 shadow-[0_4px_10px_rgba(27,27,30,0.08)] min-[900px]:hidden"
+              >
+                <div className="mx-auto flex max-w-7xl flex-col gap-1">
+                  {STUDENT_NAV_ITEMS.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-current={studentSubView === item.id ? 'page' : undefined}
+                      onClick={() => {
+                        handleStudentNav(item.id);
+                        setIsStudentMobileNavOpen(false);
+                      }}
+                      className={`rounded-lg px-3 py-2 text-left text-sm font-serif font-bold ${
+                        studentSubView === item.id
+                          ? 'bg-[#0038D1] text-white'
+                          : 'text-[#444655] hover:bg-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </nav>
             )}
           </>
         )}

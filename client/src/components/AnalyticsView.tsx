@@ -3,17 +3,22 @@
 import React from 'react';
 import { ClassKnowledgeGapSummary } from '../types/maply';
 import { Users, TrendingUp, AlertOctagon, CheckCircle2, Lightbulb, BarChart3 } from 'lucide-react';
+import { InstructorNavbar, InstructorNavItem } from './InstructorNavbar';
 
 interface AnalyticsViewProps {
   analytics: ClassKnowledgeGapSummary;
+  onNavigate: (item: InstructorNavItem) => void;
+  onLogout: () => void;
 }
 
-export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics }) => {
+export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics, onNavigate, onLogout }) => {
   const dist = analytics.score_distribution;
   const maxDist = Math.max(...Object.values(dist), 1);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-[#FAF7F2] min-h-screen">
+    <div className="min-h-screen bg-[#FAF7F2]">
+      <InstructorNavbar activeItem="Analytics" onNavigate={onNavigate} onLogout={onLogout} />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Ribbon Matching Figma #7:1718 */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#1B1B1E] pb-4">
         <div>
@@ -227,6 +232,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ analytics }) => {
           </div>
         </div>
       </div>
+      </main>
     </div>
   );
 };

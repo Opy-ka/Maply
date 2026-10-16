@@ -487,7 +487,7 @@ export const StudentView: React.FC<StudentViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#FAF7F2] font-sans text-[#1B1B1E] select-none">
+    <div className="flex h-[calc(100dvh-59px)] min-h-0 w-full flex-col overflow-hidden bg-[#FAF7F2] font-sans text-[#1B1B1E] select-none">
       {/* ========================================================= */}
       {/* 1. TOP HEADER (EXACTLY MATCHING IMAGE 2) */}
       {/* ========================================================= */}

@@ -9,6 +9,9 @@ import { StudentAssessmentsView } from '../components/StudentAssessmentsView';
 import { StudentEvaluationView } from '../components/StudentEvaluationView';
 import { StudentPersonalResultsView } from '../components/StudentPersonalResultsView';
 import { TeacherView } from '../components/TeacherView';
+import { TeacherDashboardView } from '../components/TeacherDashboardView';
+import { TeacherCoursesView } from '../components/TeacherCoursesView';
+import { TeacherAssessmentsView } from '../components/TeacherAssessmentsView';
 import { AnalyticsView } from '../components/AnalyticsView';
 import { EvaluationModal } from '../components/EvaluationModal';
 import { AuthModal } from '../components/AuthModal';
@@ -36,6 +39,8 @@ export default function Home() {
   const [analytics, setAnalytics] = useState<ClassKnowledgeGapSummary | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
   const [studentSubView, setStudentSubView] = useState<'dashboard' | 'assessments' | 'workspace' | 'evaluation'>('dashboard');
+  const [teacherSubView, setTeacherSubView] = useState<'dashboard' | 'courses' | 'assessments' | 'map' | 'premiumMap'>('dashboard');
+  const [openAiDraftOnEditor, setOpenAiDraftOnEditor] = useState(false);
   const [inspectedAssessmentId, setInspectedAssessmentId] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +68,7 @@ export default function Home() {
         const parsed = JSON.parse(savedSession);
         if (parsed.currentTab) setCurrentTab(parsed.currentTab);
         if (parsed.studentSubView) setStudentSubView(parsed.studentSubView);
+        if (parsed.teacherSubView) setTeacherSubView(parsed.teacherSubView);
         if (parsed.activeExamToken) setActiveExamToken(parsed.activeExamToken);
         if (parsed.inspectedAssessmentId) setInspectedAssessmentId(parsed.inspectedAssessmentId);
       }
@@ -80,6 +86,7 @@ export default function Home() {
           JSON.stringify({
             currentTab,
             studentSubView,
+            teacherSubView,
             activeExamToken,
             inspectedAssessmentId
           })
@@ -88,7 +95,7 @@ export default function Home() {
         console.error('Failed to persist session:', e);
       }
     }
-  }, [currentTab, studentSubView, activeExamToken, inspectedAssessmentId, isLoading]);
+  }, [currentTab, studentSubView, teacherSubView, activeExamToken, inspectedAssessmentId, isLoading]);
 
   // Live Countdown Interval for Active Exam Workspace
   useEffect(() => {
@@ -124,6 +131,8 @@ export default function Home() {
     setCurrentTab(role === 'student' ? 'student' : 'teacher');
     if (role === 'student') {
       setStudentSubView('dashboard');
+    } else {
+      setTeacherSubView('dashboard');
     }
     showToast(`✓ Berhasil masuk ke Portal Mahasiswa sebagai ${userName}`);
   };
@@ -137,6 +146,8 @@ export default function Home() {
   const handleLogout = () => {
     setCurrentTab('onboarding');
     setStudentSubView('dashboard');
+    setTeacherSubView('dashboard');
+    setOpenAiDraftOnEditor(false);
     setActiveExamToken(null);
     setInspectedAssessmentId(null);
     setExamTimeRemaining(2700);
@@ -313,11 +324,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF7F2] font-sans text-[#1B1B1E]">
-      {/* Render outer Navbar only when not in full-screen assessment workspace */}
-      {!(currentTab === 'student' && studentSubView === 'workspace') && (
+      {/* Instructor views render their own navigation bar. */}
+      {currentTab !== 'teacher' && currentTab !== 'analytics' && (
         <Navbar
           currentTab={currentTab}
-          onTabChange={setCurrentTab}
+          onTabChange={(tab) => {
+            setCurrentTab(tab);
+            if (tab === 'teacher') {
+              setTeacherSubView('map');
+              setOpenAiDraftOnEditor(false);
+            }
+          }}
           studentSubView={studentSubView}
           onStudentSubViewChange={(sub) => {
             if (sub === 'evaluation') {
@@ -325,12 +342,8 @@ export default function Home() {
             }
             setStudentSubView(sub);
           }}
-          activeExamToken={activeExamToken}
-          assessmentTitle={assessmentConfig.title}
-          courseName="FILKOM UB • Arsitektur Komputer"
           studentName="Ahmad Rizky"
           studentNim="225150201111048"
-          timeRemainingSeconds={examTimeRemaining}
           onLogout={handleLogout}
           backendOnline={backendOnline}
           onOpenAuthModal={handleOpenAuth}
@@ -421,7 +434,72 @@ export default function Home() {
           </>
         )}
 
-        {currentTab === 'teacher' && (
+        {currentTab === 'teacher' && teacherSubView === 'dashboard' && analytics && (
+          <TeacherDashboardView
+            masterMap={masterMap}
+            assessmentConfig={assessmentConfig}
+            analytics={analytics}
+            onOpenMap={() => {
+              setOpenAiDraftOnEditor(false);
+              setTeacherSubView('map');
+            }}
+            onOpenCourses={() => setTeacherSubView('courses')}
+            onOpenAssessments={() => setTeacherSubView('assessments')}
+            onOpenWizard={() => setIsWizardOpen(true)}
+            onOpenAnalytics={() => setCurrentTab('analytics')}
+            onOpenAiDraft={() => {
+              setOpenAiDraftOnEditor(true);
+              setTeacherSubView('premiumMap');
+            }}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {currentTab === 'teacher' && teacherSubView === 'courses' && (
+          <TeacherCoursesView
+            onNavigate={(item) => {
+              if (item === 'Dashboard') {
+                setTeacherSubView('dashboard');
+              } else if (item === 'Courses') {
+                setTeacherSubView('courses');
+              } else if (item === 'Maps') {
+                setOpenAiDraftOnEditor(false);
+                setTeacherSubView('map');
+              } else if (item === 'Assessments') {
+                setTeacherSubView('assessments');
+              } else {
+                setCurrentTab('analytics');
+              }
+            }}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {currentTab === 'teacher' && teacherSubView === 'assessments' && (
+          <TeacherAssessmentsView
+            assessmentConfig={assessmentConfig}
+            masterMap={masterMap}
+            onNavigate={(item) => {
+              if (item === 'Dashboard') {
+                setTeacherSubView('dashboard');
+              } else if (item === 'Courses') {
+                setTeacherSubView('courses');
+              } else if (item === 'Maps') {
+                setOpenAiDraftOnEditor(false);
+                setTeacherSubView('map');
+              } else if (item === 'Assessments') {
+                setTeacherSubView('assessments');
+              } else {
+                setCurrentTab('analytics');
+              }
+            }}
+            onCreateAssessment={() => setIsWizardOpen(true)}
+            onSaveAssessment={handleSaveAssessment}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {currentTab === 'teacher' && (teacherSubView === 'map' || teacherSubView === 'premiumMap') && (
           <TeacherView
             key={`map-${mapVersion}`}
             masterMap={masterMap}
@@ -429,10 +507,41 @@ export default function Home() {
             backendOnline={backendOnline}
             onSaveMasterMap={handleSaveMasterMap}
             onSaveAssessment={handleSaveAssessment}
+            initiallyOpenAIDraft={teacherSubView === 'premiumMap' || openAiDraftOnEditor}
+            onInitialAIDraftOpenHandled={() => setOpenAiDraftOnEditor(false)}
+            onBackToDashboard={() => {
+              setOpenAiDraftOnEditor(false);
+              setTeacherSubView('dashboard');
+            }}
+            onOpenCourses={() => setTeacherSubView('courses')}
+            onOpenAssessments={() => setTeacherSubView('assessments')}
+            onOpenAnalytics={() => setCurrentTab('analytics')}
+            onLogout={handleLogout}
           />
         )}
 
-        {currentTab === 'analytics' && <AnalyticsView analytics={analytics} />}
+        {currentTab === 'analytics' && (
+          <AnalyticsView
+            analytics={analytics}
+            onNavigate={(item) => {
+              if (item === 'Dashboard') {
+                setCurrentTab('teacher');
+                setTeacherSubView('dashboard');
+              } else if (item === 'Courses') {
+                setCurrentTab('teacher');
+                setTeacherSubView('courses');
+              } else if (item === 'Maps') {
+                setCurrentTab('teacher');
+                setOpenAiDraftOnEditor(false);
+                setTeacherSubView('map');
+              } else if (item === 'Assessments') {
+                setCurrentTab('teacher');
+                setTeacherSubView('assessments');
+              }
+            }}
+            onLogout={handleLogout}
+          />
+        )}
       </div>
 
       {/* Cognitive Evaluation Modal (Only for non-student views or quick triggers) */}
