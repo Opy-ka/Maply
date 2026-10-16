@@ -33,75 +33,152 @@ export const StudentAssessmentsView: React.FC<StudentAssessmentsViewProps> = ({
   onViewResults
 }) => {
   const [filterTab, setFilterTab] = useState<'all' | 'in_progress' | 'completed'>('all');
+  const [courseFilter, setCourseFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const assessments = [
     {
-      id: 'asm-cpu-01',
-      title: 'Asesmen #01: Alur Pemrosesan CPU & Siklus Instruksi',
+      id: 'asm-cpu-07',
+      title: 'Modul 07: Pipelining Prosesor & Penanganan Hazard',
       course: 'Arsitektur Komputer',
+      courseId: 'arkom',
       code: 'TIF-2101',
       lecturer: 'Ir. Aryo Pinandito, Ph.D.',
       status: 'in_progress',
-      statusLabel: 'Sedang Berjalan • 65% Selesai',
-      badgeColor: 'bg-[#FFDAD6] text-[#93000A] border-[#93000A]',
-      topic: 'REKONSTRUKSI GRAPH SIKLUS INSTRUKSI',
-      desc: 'Susun kembali kepingan konsep CPU, ALU, CU, dan Register sesuai alur fetch-decode-execute. Waspada terhadap kartu distraktor yang tidak memiliki keterhubungan logis pada bus data utama!',
+      statusLabel: 'Aktif Hari Ini • Siap Dikerjakan',
+      badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#059669]',
+      topic: '5-STAGE PIPELINING & DATA HAZARDS',
+      desc: 'Rangkai konsep tahapan eksekusi instruksi 5-stage pipeline (IF, ID, EX, MEM, WB) serta resolusi Data Hazard (Forwarding Unit) dan Control Hazard (Branch Prediction) sesuai model mental Master Map Dosen.',
       deadline: 'Hari ini, 23:59 WIB',
-      attempts: 'Percobaan 1 dari 2',
-      nodesCount: 7,
+      attempts: 'Percobaan 0 dari 2',
+      nodesCount: 5,
       score: null,
       isActiveCurrent: true
     },
     {
-      id: 'asm-cache-02',
-      title: 'Asesmen #02: Hirarki Memori, Cache L1/L2, & Siklus Bus Data',
-      course: 'Arsitektur Komputer',
-      code: 'TIF-2101',
-      lecturer: 'Ir. Aryo Pinandito, Ph.D.',
+      id: 'asm-mc-08',
+      title: 'Modul 08: Arsitektur Multicore, Parallelism & Cache Coherence',
+      course: 'Sistem Operasi',
+      courseId: 'os',
+      code: 'TIF-2104',
+      lecturer: 'Dr. Eng. Herman Tolle',
       status: 'in_progress',
-      statusLabel: 'Tersedia • Belum Dimulai',
-      badgeColor: 'bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]',
-      topic: 'LOKALITAS SPASIAL & TEMPORAL MEMORI',
-      desc: 'Petakan aliran data dari Secondary Storage hingga CPU Core Registers. Tentukan keterkaitan hit-rate cache dan latency transfer memori bertingkat.',
-      deadline: '18 Okt 2026, 12:00 WIB',
-      attempts: 'Percobaan 0 dari 2',
+      statusLabel: 'Segera Dibuka • 20 Okt 2026',
+      badgeColor: 'bg-[#FFEAA7] text-[#1B1B1E] border-[#1B1B1E]',
+      topic: 'SHARED MEMORY & MESI PROTOCOL',
+      desc: 'Petakan interkoneksi core CPU dengan hirarki cache L1/L2 terdistribusi dan L3 shared memory serta protokol koherensi cache.',
+      deadline: '22 Okt 2026, 23:59 WIB',
+      attempts: 'Belum Dibuka',
       nodesCount: 8,
       score: null,
       isActiveCurrent: false
     },
     {
-      id: 'asm-vm-03',
-      title: 'Asesmen #03: Translasi Alamat Virtual Memory & Paging Sistem',
+      id: 'asm-bus-06',
+      title: 'Modul 06: Sistem Bus & Manajemen I/O',
+      course: 'Arsitektur Komputer',
+      courseId: 'arkom',
+      code: 'TIF-2101',
+      lecturer: 'Ir. Aryo Pinandito, Ph.D.',
+      status: 'completed',
+      statusLabel: 'Telah Dinilai • Skor 84/100',
+      badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]',
+      topic: 'BUS ARBITRATION & INTERRUPT-DRIVEN I/O',
+      desc: 'Konstruksi graf tervalidasi dengan 14 proposisi valid. Terbukti memahami interaksi bus address, data, dan control line.',
+      deadline: 'Selesai Kemarin',
+      attempts: '1 dari 2 Percobaan Digunakan',
+      nodesCount: 14,
+      score: 84,
+      isActiveCurrent: false
+    },
+    {
+      id: 'asm-os-05',
+      title: 'Modul 05: Sinkronisasi Thread & Deadlock Resolution',
       course: 'Sistem Operasi',
+      courseId: 'os',
       code: 'TIF-2104',
       lecturer: 'Dr. Eng. Herman Tolle',
       status: 'completed',
-      statusLabel: 'Telah Dinilai • Skor 88/100',
+      statusLabel: 'Telah Dinilai • Skor 86/100',
       badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]',
-      topic: 'MANAGEMEN PAGE TABLE & TLB FAULT',
-      desc: 'Konstruksi graf telah divalidasi oleh sistem deterministik NetworkX. 8 proposisi valid berhasil terhubung dengan precision 87.5%.',
+      topic: 'MUTEX, SEMAPHORE & BANKERS ALGORITHM',
+      desc: '16 proposisi valid terhubung. Terdeteksi 1 miskonsepsi minor pada siklus dependensi resource allocation graph.',
       deadline: 'Selesai 12 Okt 2026',
       attempts: '2 dari 2 Percobaan Digunakan',
-      nodesCount: 9,
+      nodesCount: 16,
+      score: 86,
+      isActiveCurrent: false
+    },
+    {
+      id: 'asm-cpu-04',
+      title: 'Modul 04: Struktur CPU & Hierarki Cache L1/L2',
+      course: 'Arsitektur Komputer',
+      courseId: 'arkom',
+      code: 'TIF-2101',
+      lecturer: 'Ir. Aryo Pinandito, Ph.D.',
+      status: 'completed',
+      statusLabel: 'Perlu Penguatan • Skor 82/100',
+      badgeColor: 'bg-[#FFFBEB] text-[#B45309] border-[#D97706]',
+      topic: 'INTERNAL REGISTERS & L1/L2 CACHE HIT RATE',
+      desc: 'Ditemukan proposisi terbalik pada hubungan CPU dan Register internal. Perlu review pada visualisasi komparatif graf.',
+      deadline: 'Selesai 10 Okt 2026',
+      attempts: '1 Kali Iterasi',
+      nodesCount: 12,
+      score: 82,
+      isActiveCurrent: false
+    },
+    {
+      id: 'asm-bd-03',
+      title: 'Modul 03: Normalisasi Relasional & Ketergantungan Fungsional',
+      course: 'Basis Data',
+      courseId: 'bd',
+      code: 'TIF-2103',
+      lecturer: 'Achmad Basuki, Ph.D.',
+      status: 'completed',
+      statusLabel: 'Telah Dinilai • Skor 88/100',
+      badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]',
+      topic: '1NF, 2NF, 3NF & BCNF DECOMPOSITION',
+      desc: '15 proposisi valid terpasang dengan akurasi 93.7%. Struktur graf mencerminkan model mental master map dosen.',
+      deadline: 'Selesai 06 Okt 2026',
+      attempts: '1 Kali Iterasi',
+      nodesCount: 15,
       score: 88,
       isActiveCurrent: false
     },
     {
-      id: 'asm-osi-04',
-      title: 'Asesmen #04: Enkapsulasi Paket Protokol Lapisan OSI & TCP/IP',
+      id: 'asm-net-02',
+      title: 'Modul 02: Arsitektur Lapisan TCP/IP & Subnetting CIDR',
       course: 'Jaringan Komputer',
+      courseId: 'jarkom',
       code: 'TIF-2108',
       lecturer: 'Widhy Hayuhardhika N. P., M.Kom.',
       status: 'completed',
-      statusLabel: 'Telah Dinilai • Skor 74/100',
+      statusLabel: 'Telah Dinilai • Skor 85/100',
       badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]',
-      topic: 'DATA ENCAPSULATION & HEADER FRAMING',
-      desc: 'Konstruksi graf selesai dengan rekomendasi perkuatan pada perbedaan framing data link vs network packet header.',
-      deadline: 'Selesai 08 Okt 2026',
+      topic: 'PACKET ENCAPSULATION & ROUTING PROTOCOL',
+      desc: '13 proposisi valid. Keterkaitan antara transport layer (TCP/UDP) dengan network layer (IP) dirangkai dengan baik.',
+      deadline: 'Selesai 01 Okt 2026',
       attempts: '1 Kali Iterasi',
-      nodesCount: 7,
-      score: 74,
+      nodesCount: 13,
+      score: 85,
+      isActiveCurrent: false
+    },
+    {
+      id: 'asm-os-01',
+      title: 'Modul 01: Arsitektur Von Neumann & Siklus Instruksi Kernel',
+      course: 'Sistem Operasi',
+      courseId: 'os',
+      code: 'TIF-2104',
+      lecturer: 'Dr. Eng. Herman Tolle',
+      status: 'completed',
+      statusLabel: 'Telah Dinilai • Skor 90/100',
+      badgeColor: 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]',
+      topic: 'FETCH-DECODE-EXECUTE & SYSTEM CALLS',
+      desc: '18 proposisi valid dengan skor pemahaman konseptual 94.7%. Predikat relasional sangat presisi.',
+      deadline: 'Selesai 27 Sep 2026',
+      attempts: '1 Kali Iterasi',
+      nodesCount: 18,
+      score: 90,
       isActiveCurrent: false
     }
   ];
@@ -109,7 +186,8 @@ export const StudentAssessmentsView: React.FC<StudentAssessmentsViewProps> = ({
   const filtered = assessments.filter((a) => {
     if (filterTab === 'in_progress' && a.status !== 'in_progress') return false;
     if (filterTab === 'completed' && a.status !== 'completed') return false;
-    if (searchQuery.trim() && !a.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (courseFilter !== 'all' && a.courseId !== courseFilter) return false;
+    if (searchQuery.trim() && !a.title.toLowerCase().includes(searchQuery.toLowerCase()) && !a.course.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -127,7 +205,7 @@ export const StudentAssessmentsView: React.FC<StudentAssessmentsViewProps> = ({
               </span>
               <span className="px-2.5 py-1 rounded-full bg-[#FFDDB8] text-[#2A1700] text-[10px] font-mono font-bold flex items-center gap-1.5 border border-[#1B1B1E]">
                 <Sparkles className="w-3 h-3 text-[#D97706]" />
-                Hirashima Kit-Build Framework
+                Lintas 4 Mata Kuliah Semester Ganjil
               </span>
             </div>
 
@@ -136,7 +214,7 @@ export const StudentAssessmentsView: React.FC<StudentAssessmentsViewProps> = ({
             </h1>
 
             <p className="text-xs sm:text-sm text-[#444655] leading-relaxed">
-              Asesmen rekonstruksi peta konsep berarah (Kit-Build) berdasarkan kurikulum aktif FILKOM UB.
+              Asesmen rekonstruksi peta konsep berarah (Kit-Build) lintas 4 mata kuliah aktif FILKOM UB.
               Bangun proposisi ilmiah yang valid dari kepingan konsep yang tersedia.
             </p>
           </div>
@@ -144,71 +222,100 @@ export const StudentAssessmentsView: React.FC<StudentAssessmentsViewProps> = ({
           {/* Right Benchmark Badge Card (Figma #46:1487) */}
           <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] flex items-center gap-4 shrink-0">
             <div className="w-14 h-14 rounded-xl bg-[#DEE1FF] border-2 border-[#1B1B1E] flex flex-col items-center justify-center text-center">
-              <span className="text-xl font-black font-sans tracking-tight text-[#0038D1] leading-none tabular-nums">82.4</span>
+              <span className="text-xl font-black font-sans tracking-tight text-[#0038D1] leading-none tabular-nums">84.5</span>
               <span className="text-[8.5px] font-mono font-bold uppercase text-[#001257]">AKURASI</span>
             </div>
             <div className="space-y-0.5">
               <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-[#6D4400] block">
-                TINGKAT KOGNITIF
+                PROGRES PENUGASAN
               </span>
               <h4 className="text-base font-serif font-black text-[#1B1B1E] leading-tight">
-                Terintegrasi
+                6 dari 8 Selesai
               </h4>
               <p className="text-[11px] text-[#444655] font-medium">
-                5 dari 6 Peta Konsep Valid
+                4 Mata Kuliah Semester Ganjil
               </p>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* SECTION 2: TACTILE FILTER BAR (Figma #46:1503) */}
+        {/* SECTION 2: TACTILE FILTER BAR (Status + Course Filters) */}
         {/* ========================================================= */}
-        <div className="p-3 sm:p-4 rounded-2xl bg-[#F6F2F7] border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Pill Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2px_2px_0px_#1B1B1E] text-xs">
-            <button
-              onClick={() => setFilterTab('all')}
-              className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
-                filterTab === 'all'
-                  ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
-                  : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
-              }`}
-            >
-              Semua ({assessments.length})
-            </button>
-            <button
-              onClick={() => setFilterTab('in_progress')}
-              className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
-                filterTab === 'in_progress'
-                  ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
-                  : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
-              }`}
-            >
-              Tersedia / Aktif (2)
-            </button>
-            <button
-              onClick={() => setFilterTab('completed')}
-              className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
-                filterTab === 'completed'
-                  ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
-                  : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
-              }`}
-            >
-              Telah Selesai (2)
-            </button>
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-[#F6F2F7] border-2 border-[#1B1B1E] shadow-[3px_3px_0px_#1B1B1E] space-y-3">
+          {/* Top Row: Status Tabs & Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Pill Tabs for Status */}
+            <div className="flex items-center gap-1.5 p-1 bg-white border-2 border-[#1B1B1E] rounded-full shadow-[2px_2px_0px_#1B1B1E] text-xs">
+              <button
+                onClick={() => setFilterTab('all')}
+                className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
+                  filterTab === 'all'
+                    ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
+                    : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
+                }`}
+              >
+                Semua Status ({assessments.length})
+              </button>
+              <button
+                onClick={() => setFilterTab('in_progress')}
+                className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
+                  filterTab === 'in_progress'
+                    ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
+                    : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
+                }`}
+              >
+                Tersedia / Aktif (2)
+              </button>
+              <button
+                onClick={() => setFilterTab('completed')}
+                className={`px-3 sm:px-4 py-1.5 rounded-full font-serif text-xs transition-all cursor-pointer ${
+                  filterTab === 'completed'
+                    ? 'bg-[#0038D1] text-white font-black shadow-[1.5px_1.5px_0px_#1B1B1E]'
+                    : 'text-[#444655] hover:text-[#1B1B1E] font-bold'
+                }`}
+              >
+                Telah Selesai (6)
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="w-4 h-4 text-[#71717A] absolute left-3.5 top-3" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari modul atau mata kuliah..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#0038D1]"
+              />
+            </div>
           </div>
 
-          {/* Search Box */}
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="w-4 h-4 text-[#71717A] absolute left-3.5 top-3" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari modul asesmen..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#0038D1]"
-            />
+          {/* Bottom Row: Course Filter Buttons */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 text-xs">
+            <span className="text-[11px] font-mono font-bold text-[#71717A] uppercase mr-1 shrink-0">
+              Mata Kuliah:
+            </span>
+            {[
+              { id: 'all', label: 'Semua Matkul' },
+              { id: 'arkom', label: 'Arsitektur Komputer (3)' },
+              { id: 'os', label: 'Sistem Operasi (3)' },
+              { id: 'bd', label: 'Basis Data (1)' },
+              { id: 'jarkom', label: 'Jaringan Komputer (1)' }
+            ].map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCourseFilter(c.id)}
+                className={`px-3 py-1 rounded-full text-xs font-serif shrink-0 border transition-all cursor-pointer ${
+                  courseFilter === c.id
+                    ? 'bg-[#1B1B1E] text-white font-black border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#0038D1]'
+                    : 'bg-white hover:bg-slate-100 text-[#444655] font-bold border-[#1B1B1E]/30'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
         </div>
 

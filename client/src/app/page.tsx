@@ -7,6 +7,7 @@ import { StudentView } from '../components/StudentView';
 import { StudentDashboardView } from '../components/StudentDashboardView';
 import { StudentAssessmentsView } from '../components/StudentAssessmentsView';
 import { StudentEvaluationView } from '../components/StudentEvaluationView';
+import { StudentPersonalResultsView } from '../components/StudentPersonalResultsView';
 import { TeacherView } from '../components/TeacherView';
 import { AnalyticsView } from '../components/AnalyticsView';
 import { EvaluationModal } from '../components/EvaluationModal';
@@ -35,6 +36,7 @@ export default function Home() {
   const [analytics, setAnalytics] = useState<ClassKnowledgeGapSummary | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
   const [studentSubView, setStudentSubView] = useState<'dashboard' | 'assessments' | 'workspace' | 'evaluation'>('dashboard');
+  const [inspectedAssessmentId, setInspectedAssessmentId] = useState<string | null>(null);
   const [backendOnline, setBackendOnline] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,10 +47,65 @@ export default function Home() {
   const [activeExamToken, setActiveExamToken] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Live Exam Countdown Timer (synchronized across Navbar & Student Workspace)
+  const [examTimeRemaining, setExamTimeRemaining] = useState<number>(2700);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  // Restore active user session on mount
+  useEffect(() => {
+    try {
+      const savedSession = localStorage.getItem('maply_active_session_v1');
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession);
+        if (parsed.currentTab) setCurrentTab(parsed.currentTab);
+        if (parsed.studentSubView) setStudentSubView(parsed.studentSubView);
+        if (parsed.activeExamToken) setActiveExamToken(parsed.activeExamToken);
+        if (parsed.inspectedAssessmentId) setInspectedAssessmentId(parsed.inspectedAssessmentId);
+      }
+    } catch (e) {
+      console.error('Failed to restore session:', e);
+    }
+  }, []);
+
+  // Persist session changes to localStorage
+  useEffect(() => {
+    if (!isLoading) {
+      try {
+        localStorage.setItem(
+          'maply_active_session_v1',
+          JSON.stringify({
+            currentTab,
+            studentSubView,
+            activeExamToken,
+            inspectedAssessmentId
+          })
+        );
+      } catch (e) {
+        console.error('Failed to persist session:', e);
+      }
+    }
+  }, [currentTab, studentSubView, activeExamToken, inspectedAssessmentId, isLoading]);
+
+  // Live Countdown Interval for Active Exam Workspace
+  useEffect(() => {
+    if (currentTab === 'student' && studentSubView === 'workspace') {
+      const interval = setInterval(() => {
+        setExamTimeRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            showToast('⚠️ Waktu pengerjaan asesmen telah habis!');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentTab, studentSubView]);
 
   const handleOpenAuth = (role: 'student' | 'teacher' = 'student') => {
     setAuthRole(role);
@@ -59,6 +116,7 @@ export default function Home() {
     setActiveExamToken(token);
     setCurrentTab('student');
     setStudentSubView('workspace');
+    setExamTimeRemaining((assessmentConfig.time_limit_minutes || 45) * 60);
     showToast(`✓ Memulai sesi pengerjaan Kit Map dengan Token ${token}!`);
   };
 
@@ -79,6 +137,12 @@ export default function Home() {
   const handleLogout = () => {
     setCurrentTab('onboarding');
     setStudentSubView('dashboard');
+    setActiveExamToken(null);
+    setInspectedAssessmentId(null);
+    setExamTimeRemaining(2700);
+    try {
+      localStorage.removeItem('maply_active_session_v1');
+    } catch {}
     showToast('✓ Anda telah berhasil keluar dari akun');
   };
 
@@ -144,6 +208,7 @@ export default function Home() {
 
   const handleEvaluationComplete = async (res: EvaluationResult) => {
     setEvaluationResult(res);
+    setInspectedAssessmentId(assessmentConfig.id);
     setStudentSubView('evaluation');
     if (backendOnline) {
       setAnalytics(await fetchClassAnalytics(assessmentConfig.id));
@@ -248,25 +313,29 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-[#FAF7F2] font-sans text-[#1B1B1E]">
-      <Navbar
-        currentTab={currentTab}
-        onTabChange={setCurrentTab}
-        studentSubView={studentSubView}
-        onStudentSubViewChange={(sub) => {
-          if (sub === 'evaluation' && !evaluationResult) {
-            setEvaluationResult(sampleEvaluationResult);
-          }
-          setStudentSubView(sub);
-        }}
-        activeExamToken={activeExamToken}
-        assessmentTitle={assessmentConfig.title}
-        courseName="FILKOM UB • Arsitektur Komputer"
-        studentName="Ahmad Rizky"
-        studentNim="225150201111048"
-        onLogout={handleLogout}
-        backendOnline={backendOnline}
-        onOpenAuthModal={handleOpenAuth}
-      />
+      {/* Render outer Navbar only when not in full-screen assessment workspace */}
+      {!(currentTab === 'student' && studentSubView === 'workspace') && (
+        <Navbar
+          currentTab={currentTab}
+          onTabChange={setCurrentTab}
+          studentSubView={studentSubView}
+          onStudentSubViewChange={(sub) => {
+            if (sub === 'evaluation') {
+              setInspectedAssessmentId(null);
+            }
+            setStudentSubView(sub);
+          }}
+          activeExamToken={activeExamToken}
+          assessmentTitle={assessmentConfig.title}
+          courseName="FILKOM UB • Arsitektur Komputer"
+          studentName="Ahmad Rizky"
+          studentNim="225150201111048"
+          timeRemainingSeconds={examTimeRemaining}
+          onLogout={handleLogout}
+          backendOnline={backendOnline}
+          onOpenAuthModal={handleOpenAuth}
+        />
+      )}
 
       {/* Global Toast Notification */}
       {toastMessage && (
@@ -294,6 +363,7 @@ export default function Home() {
                 onEnterToken={(tok) => handleEnterExamWithToken(tok)}
                 onViewResults={() => {
                   if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                  setInspectedAssessmentId('asm-cpu-06');
                   setStudentSubView('evaluation');
                 }}
               />
@@ -306,6 +376,7 @@ export default function Home() {
                 onStartWorkspace={() => setStudentSubView('workspace')}
                 onViewResults={() => {
                   if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                  setInspectedAssessmentId('asm-cpu-06');
                   setStudentSubView('evaluation');
                 }}
               />
@@ -316,18 +387,36 @@ export default function Home() {
                 key={`kit-${kitVersion}`}
                 kit={kit}
                 assessmentConfig={assessmentConfig}
+                timeRemainingSeconds={examTimeRemaining}
+                studentName="Ahmad Rizky"
+                studentNim="225150201111048"
                 onEvaluationComplete={handleEvaluationComplete}
                 onBackToDashboard={() => setStudentSubView('dashboard')}
               />
             )}
 
             {studentSubView === 'evaluation' && (
-              <StudentEvaluationView
-                result={evaluationResult || sampleEvaluationResult}
-                assessmentConfig={assessmentConfig}
-                onBackToDashboard={() => setStudentSubView('dashboard')}
-                onRetakeWorkspace={() => setStudentSubView('workspace')}
-              />
+              inspectedAssessmentId ? (
+                <StudentEvaluationView
+                  result={evaluationResult || sampleEvaluationResult}
+                  assessmentConfig={assessmentConfig}
+                  onBackToDashboard={() => setInspectedAssessmentId(null)}
+                  onRetakeWorkspace={() => {
+                    setInspectedAssessmentId(null);
+                    setStudentSubView('workspace');
+                  }}
+                />
+              ) : (
+                <StudentPersonalResultsView
+                  studentName="Ahmad Rizky"
+                  studentNim="225150201111048"
+                  onBackToDashboard={() => setStudentSubView('dashboard')}
+                  onInspectAssessment={(asmId) => {
+                    if (!evaluationResult) setEvaluationResult(sampleEvaluationResult);
+                    setInspectedAssessmentId(asmId);
+                  }}
+                />
+              )
             )}
           </>
         )}

@@ -264,7 +264,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                 <span className="text-xs font-bold text-[#71717A] ml-1">Modul</span>
                 <span className="text-[10.5px] font-mono font-bold text-[#1B1B1E] bg-[#FAF7F2] px-1.5 py-0.5 rounded border border-[#1B1B1E]/20">75%</span>
               </div>
-              <p className="text-[11px] text-[#444655] mt-1.5">Modul terbit semester ganjil</p>
+              <p className="text-[11px] text-[#444655] mt-1.5 font-medium">Lintas 4 Mata Kuliah Semester Ganjil</p>
             </div>
             <div className="pt-2 border-t border-[#1B1B1E]/10 flex items-center justify-between text-[10px] font-mono text-[#71717A]">
               <span>Tersedia Hari Ini</span>
@@ -310,48 +310,58 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Primary Active Assessment Card (Figma #57:12262) */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-[#FFEAA7] border-2 border-[#1B1B1E] shadow-[5px_5px_0px_#1B1B1E] space-y-4">
+        {/* Section 3: Primary Active Assessment Card (Aligned with Image 1) */}
+        <div className="p-6 sm:p-7 rounded-3xl bg-[#FFEAA7] border-2 border-[#1B1B1E] shadow-[5px_5px_0px_#1B1B1E] space-y-4">
+          {/* Header Row: Left Badge, Center Target Icon, Right Timer & Deadline */}
           <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Left Pill: Green dot + ASESMEN AKTIF • ARSITEKTUR KOMPUTER #07 */}
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#059669] animate-ping"></span>
-              <span className="text-xs font-black uppercase tracking-wider text-[#1B1B1E]">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
+              <span className="font-mono text-xs font-black uppercase tracking-wider text-[#1B1B1E]">
                 ASESMEN AKTIF &bull; ARSITEKTUR KOMPUTER #07
               </span>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Center: Decorative Focus Dot */}
+            <div className="hidden md:flex w-7 h-7 rounded-full border border-[#1B1B1E] items-center justify-center bg-transparent">
+              <span className="w-2 h-2 rounded-full bg-[#1B1B1E]"></span>
+            </div>
+
+            {/* Right Badges: Batas Waktu & Tenggat */}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-3 py-1 rounded-full bg-white border border-[#1B1B1E] text-xs font-bold text-[#1B1B1E] flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
                 <Clock className="w-3.5 h-3.5 text-[#0038D1]" />
                 <span>Batas Waktu: {assessmentConfig.time_limit_minutes || 45} Menit</span>
               </span>
-              <span className="px-3 py-1 rounded-full bg-[#DA3437] text-white border border-[#1B1B1E] text-xs font-bold flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
+              <span className="px-3.5 py-1 rounded-full bg-[#DA3437] text-white border border-[#1B1B1E] text-xs font-bold flex items-center gap-1.5 shadow-[1px_1px_0px_#1B1B1E]">
                 <Calendar className="w-3.5 h-3.5 text-white" />
                 <span>Tenggat: Hari Ini, 23:59 WIB</span>
               </span>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#1B1B1E]">
-              {assessmentConfig.title || 'Rekonstruksi Peta Konsep: Pipelining Prosesor & Penanganan Hazard'}
+          {/* Assessment Title & Subtitle */}
+          <div className="space-y-2 pt-1">
+            <h2 className="text-2xl sm:text-3xl font-serif font-black text-[#1B1B1E] tracking-tight">
+              Kuis Pemahaman Konseptual CPU
             </h2>
-            <p className="text-xs sm:text-sm text-[#444655] max-w-3xl leading-relaxed">
-              {assessmentConfig.instructions ||
-                'Rangkai konsep tahapan eksekusi instruksi 5-stage pipeline (IF, ID, EX, MEM, WB) serta resolusi Data Hazard (Forwarding Unit) dan Control Hazard (Branch Prediction) sesuai model mental Master Map Dosen.'}
+            <p className="text-xs sm:text-sm text-[#444655] max-w-4xl leading-relaxed">
+              Rangkai konsep tahapan eksekusi instruksi 5-stage pipeline (IF, ID, EX, MEM, WB) serta resolusi Data Hazard (Forwarding Unit) dan Control Hazard (Branch Prediction) sesuai model mental Master Map Dosen.
             </p>
           </div>
 
+          {/* Bottom Bar: Concepts count, Relation types, Scheduled Exam and CTA Button */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t-2 border-[#1B1B1E]">
-            <div className="flex items-center gap-4 text-xs font-bold text-[#1B1B1E]">
-              <span className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-lg border border-[#1B1B1E]">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-bold text-[#1B1B1E]">
+              <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
                 <Layers className="w-3.5 h-3.5 text-[#0038D1]" />
-                {kit.concepts.length || 14} Kepingan Konsep
+                5 Kepingan Konsep
               </span>
-              <span className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-lg border border-[#1B1B1E]">
+              <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
                 <Sparkles className="w-3.5 h-3.5 text-[#059669]" />
-                {kit.available_relationships.length || 6} Tipe Relasi
+                5 Tipe Relasi
               </span>
-              <span className="flex items-center gap-1.5 bg-white/70 px-2.5 py-1 rounded-lg border border-[#1B1B1E]">
+              <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#1B1B1E] shadow-[1px_1px_0px_#1B1B1E]">
                 <Clock className="w-3.5 h-3.5 text-[#DA3437]" />
                 Ujian Terjadwal
               </span>
@@ -449,10 +459,13 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               {/* Modul 07: Aktif Hari Ini */}
               <div className="p-3 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[9.5px] font-mono font-black text-[#065F46] uppercase flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse"></span>
                       Aktif Hari Ini
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-white border border-[#1B1B1E] text-[9.5px] font-mono font-bold text-[#0038D1]">
+                      Arsitektur Komputer
                     </span>
                     <span className="text-[10px] font-mono text-[#71717A]">Batas: 23:59 WIB</span>
                   </div>
@@ -475,10 +488,13 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               {/* Modul 08: Segera Dibuka / Terjadwal */}
               <div className="p-3 rounded-xl bg-[#FAF7F2]/60 border-2 border-[#1B1B1E]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="space-y-1 min-w-0 opacity-80">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-2 py-0.5 rounded-full bg-[#FFEAA7] border border-[#1B1B1E] text-[9.5px] font-mono font-black text-[#1B1B1E] uppercase flex items-center gap-1">
                       <Clock className="w-3 h-3 text-[#1B1B1E]" />
                       Segera Dibuka
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-white border border-[#1B1B1E] text-[9.5px] font-mono font-bold text-[#059669]">
+                      Sistem Operasi
                     </span>
                     <span className="text-[10px] font-mono text-[#71717A]">Jadwal: 20 Okt 2026, 08:00 WIB</span>
                   </div>
@@ -503,16 +519,17 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           {/* Left Column: Retensi Kognitif & Diagnosa Miskonsepsi */}
           <div className="p-6 rounded-2xl bg-white border-2 border-[#1B1B1E] shadow-[4px_4px_0px_#1B1B1E] space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b-2 border-[#FAF7F2]">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#0038D1]" />
-                  <h3 className="text-base font-serif font-black text-[#1B1B1E]">
-                    Retensi Kognitif & Analisis Miskonsepsi
+              <div className="flex items-center justify-between pb-3 border-b-2 border-[#FAF7F2] gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <BarChart3 className="w-5 h-5 text-[#0038D1] shrink-0" />
+                  <h3 className="text-base font-serif font-black text-[#1B1B1E] truncate">
+                    Retensi Kognitif & Miskonsepsi
                   </h3>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#EEF2FF] border border-[#0038D1] text-[10px] font-mono font-bold text-[#0038D1]">
-                  Diagnosa Graf Kognitif &bull; Akumulatif
-                </span>
+                <div className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF2FF] border border-[#0038D1] text-[10px] font-mono font-bold text-[#0038D1] whitespace-nowrap shadow-[1px_1px_0px_#1B1B1E] select-none leading-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0038D1] shrink-0" />
+                  <span className="whitespace-nowrap">Diagnosa Graf Kognitif &bull; Akumulatif</span>
+                </div>
               </div>
 
               <p className="text-xs text-[#444655] leading-relaxed">
@@ -525,7 +542,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="px-2 py-0.5 rounded bg-white border border-[#1B1B1E] text-[10px] font-mono font-black text-[#1B1B1E]">
-                        Modul 04: Struktur CPU & Cache
+                        Arsitektur Komputer &bull; Modul 04
                       </span>
                       <span className="text-[10.5px] font-mono font-black uppercase text-[#B45309]">
                         Miskonsepsi 01 &bull; Proposisi Terbalik
@@ -549,7 +566,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="px-2 py-0.5 rounded bg-white border border-[#1B1B1E] text-[10px] font-mono font-black text-[#1B1B1E]">
-                        Modul 05: Memori Virtual & Paging
+                        Sistem Operasi &bull; Modul 05
                       </span>
                       <span className="text-[10.5px] font-mono font-black uppercase text-[#B45309]">
                         Miskonsepsi 02 &bull; Salah Klasifikasi Hierarki
@@ -612,27 +629,35 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                 {[
                   {
                     title: 'Modul 06: Sistem Bus & Manajemen I/O',
+                    course: 'Arsitektur Komputer',
+                    courseBadge: 'bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]',
                     score: 84,
                     date: 'Kemarin',
                     propositions: '14 Proposisi',
                     status: 'Tuntas'
                   },
                   {
-                    title: 'Modul 05: Memori Virtual & Struktur Paging',
+                    title: 'Modul 05: Sinkronisasi Thread & Deadlock',
+                    course: 'Sistem Operasi',
+                    courseBadge: 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
                     score: 86,
                     date: '12 Okt 2026',
                     propositions: '16 Proposisi',
                     status: 'Tuntas'
                   },
                   {
-                    title: 'Modul 04: Struktur CPU & Hierarki Cache',
+                    title: 'Modul 04: Normalisasi Basis Data & Relasional',
+                    course: 'Basis Data',
+                    courseBadge: 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
                     score: 82,
                     date: '10 Okt 2026',
                     propositions: '12 Proposisi',
                     status: 'Perlu Penguatan'
                   },
                   {
-                    title: 'Modul 03: Arsitektur Von Neumann & Siklus Instruksi',
+                    title: 'Modul 03: Arsitektur Von Neumann & Siklus CPU',
+                    course: 'Arsitektur Komputer',
+                    courseBadge: 'bg-[#EEF2FF] text-[#0038D1] border-[#C7D2FE]',
                     score: 88,
                     date: '06 Okt 2026',
                     propositions: '15 Proposisi',
@@ -644,7 +669,12 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                     className="px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border-2 border-[#1B1B1E] flex items-center justify-between gap-3 shadow-[1.5px_1.5px_0px_#1B1B1E] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all"
                   >
                     <div className="space-y-0.5 min-w-0 flex-1">
-                      <h4 className="font-bold text-xs text-[#1B1B1E] truncate">{item.title}</h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-1.5 py-0.2 rounded border text-[9px] font-mono font-bold ${item.courseBadge}`}>
+                          {item.course}
+                        </span>
+                        <h4 className="font-bold text-xs text-[#1B1B1E] truncate">{item.title}</h4>
+                      </div>
                       <span className="text-[9.5px] font-mono text-[#71717A] block">
                         {item.date} &bull; {item.propositions}
                       </span>

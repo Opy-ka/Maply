@@ -31,6 +31,7 @@ interface NavbarProps {
   courseName?: string;
   studentName?: string;
   studentNim?: string;
+  timeRemainingSeconds?: number;
   onLogout?: () => void;
 }
 
@@ -42,7 +43,7 @@ interface StudentNavItem {
 const STUDENT_NAV_ITEMS: StudentNavItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'assessments', label: 'My Assessments' },
-  { id: 'evaluation', label: 'Results' }
+  { id: 'evaluation', label: 'Personal Results' }
 ];
 
 interface TeacherNavItem {
@@ -67,6 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   courseName = 'FILKOM UB • Arsitektur Komputer',
   studentName = 'Ahmad Rizky',
   studentNim = '225150201111048',
+  timeRemainingSeconds,
   onLogout
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -146,16 +148,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       let left = targetRect.left - navRect.left;
       let width = targetRect.width;
-      let borderRadius = '9999px 9999px 9999px 9999px';
+      let borderRadius = '9999px';
 
       if (isFirst) {
-        // Bleed 6px past left inner border; square left edge so container overflow-hidden clips flush with zero white gap
-        width = targetRect.right - navRect.left + 6;
-        left = -6;
+        // Bleed past left border for zero-gap fit against container's rounded cap
+        left = -4;
+        width = targetRect.right - navRect.left + 4;
         borderRadius = '0 9999px 9999px 0';
       } else if (isLast) {
-        // Bleed 6px past right inner border; square right edge
-        width = navRect.right - targetRect.left + 6;
+        // Bleed past right border for zero-gap fit against container's rounded cap
+        left = targetRect.left - navRect.left;
+        width = navRect.right - targetRect.left + 4;
         borderRadius = '9999px 0 0 9999px';
       }
 
@@ -409,15 +412,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span>Cloud Synced</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFEAA7] border-2 border-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E] text-xs font-mono font-black text-[#1B1B1E]">
-                    <Clock className="w-3.5 h-3.5 text-[#8E5900]" />
-                    <span>24:18 SISA</span>
-                  </div>
+                  {/* Live Exam Countdown Timer */}
+                  {(() => {
+                    const secs = timeRemainingSeconds !== undefined ? timeRemainingSeconds : 2700;
+                    const mins = Math.floor(secs / 60);
+                    const remSecs = secs % 60;
+                    const formatted = `${mins.toString().padStart(2, '0')}:${remSecs.toString().padStart(2, '0')}`;
+                    const isUrgent = secs <= 300;
 
-                  {/* Course Pill */}
-                  <span className="hidden xl:inline-block px-3 py-1 rounded-full bg-[#F0EDF1] border border-[#1B1B1E] text-[10px] font-serif font-black uppercase text-[#1B1B1E]">
-                    {courseName}
-                  </span>
+                    return (
+                      <div
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border-2 text-xs font-mono font-black transition-colors ${
+                          isUrgent
+                            ? 'bg-[#FEF2F2] border-[#DC2626] text-[#DC2626] shadow-[1.5px_1.5px_0px_#DC2626] animate-pulse'
+                            : 'bg-[#FFEAA7] border-[#1B1B1E] text-[#1B1B1E] shadow-[1.5px_1.5px_0px_#1B1B1E]'
+                        }`}
+                        title={isUrgent ? 'Peringatan: Waktu pengerjaan tersisa kurang dari 5 menit!' : 'Sisa waktu pengerjaan asesmen'}
+                      >
+                        <Clock className={`w-3.5 h-3.5 ${isUrgent ? 'text-[#DC2626]' : 'text-[#8E5900]'}`} />
+                        <span>{formatted} SISA</span>
+                      </div>
+                    );
+                  })()}
 
                   {/* Student Avatar */}
                   <div className="w-8 h-8 rounded-full bg-[#0038D1] text-white flex items-center justify-center font-serif font-black text-xs border-2 border-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E]">
@@ -458,8 +474,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                           }}
                           onClick={() => handleStudentNav(item.id)}
                           onMouseEnter={() => handleStudentTabHover(item.id)}
-                          className={`relative z-10 h-full w-[105px] sm:w-[130px] flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
-                            isFirst ? 'pl-2' : isLast ? 'pr-2' : ''
+                          className={`relative z-10 h-full flex items-center justify-center text-center text-xs whitespace-nowrap cursor-pointer transition-colors duration-150 ${
+                            isFirst
+                              ? 'pl-5 pr-4 sm:pl-6 sm:pr-4.5'
+                              : isLast
+                              ? 'pl-4 pr-5 sm:pl-4.5 sm:pr-6'
+                              : 'px-4 sm:px-4.5'
                           } ${
                             isHighlighted
                               ? 'text-white font-serif font-black tracking-tight'
@@ -473,12 +493,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </nav>
                 </div>
 
-                {/* Right: Course Badge + Tactile Profile Pill & Dropdown (Uniform Height h-[38px]) */}
+                {/* Right: Tactile Profile Pill & Dropdown (Course Badge Removed for Multi-Course Portfolio) */}
                 <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-                  {/* Course Pill: Standardized h-[38px], border-2, shadow-[2px_2px_0px_#1B1B1E] */}
-                  <div className="hidden lg:flex h-[38px] items-center px-3.5 rounded-full bg-[#F0EDF1] border-2 border-[#1B1B1E] text-[10.5px] font-serif font-black uppercase text-[#1B1B1E] shadow-[2px_2px_0px_#1B1B1E] select-none">
-                    <span>{courseName}</span>
-                  </div>
+                  {/* Tactile Profile Pill: Standardized h-[38px], border-2, shadow-[2px_2px_0px_#1B1B1E] */}
 
                   {/* Tactile Profile Pill: Standardized h-[38px], border-2, shadow-[2px_2px_0px_#1B1B1E] */}
                   <div className="relative" ref={profileMenuRef}>

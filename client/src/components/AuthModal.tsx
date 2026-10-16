@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   GraduationCap,
@@ -34,6 +34,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [role, setRole] = useState<'student' | 'teacher'>(initialRole);
   const [studentMode, setStudentMode] = useState<'token' | 'account'>('token');
 
+  useEffect(() => {
+    setRole(initialRole);
+    setTokenError('');
+  }, [initialRole, isOpen]);
+
   // Form states
   const [tokenInput, setTokenInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
@@ -59,14 +64,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleSsoLogin = (provider: 'siakad' | 'google') => {
-    const defaultName = role === 'student' ? 'M. Fadhil (Mahasiswa)' : 'Dr. Ir. Hendra (Dosen)';
+    const defaultName = role === 'student' ? 'Ahmad Rizky' : 'Ir. Aryo Pinandito, Ph.D.';
     onLoginSuccess(role, defaultName);
     onClose();
   };
 
   const handleManualLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const name = emailInput ? emailInput.split('@')[0] : (role === 'student' ? 'Mahasiswa FILKOM' : 'Dosen FILKOM');
+    const name = emailInput ? emailInput.split('@')[0] : (role === 'student' ? 'Ahmad Rizky' : 'Ir. Aryo Pinandito, Ph.D.');
     onLoginSuccess(role, name);
     onClose();
   };
